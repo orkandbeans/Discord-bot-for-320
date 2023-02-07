@@ -5,33 +5,40 @@ from dotenv import load_dotenv
 import random
 import os
 
-#Create bot declaration with intents
-bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
+from lorelookup import *
 
-#when bot is logged in
+# Create bot declaration with intents
+bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+
+
+# when bot is logged in
 @bot.event
 async def on_ready():
     print("Bot is Up and Ready")
 
-    #try to sync all commands that aren't actively in the tree or have been altered
+    # try to sync all commands that aren't actively in the tree or have been altered
     try:
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} command(s)")
-    #else print exception
+    # else print exception
     except Exception as e:
         print(e)
 
-"""
------------------INSERT BOT COMMANDS HERE--------------------------
+
+# -----------------INSERT BOT COMMANDS HERE--------------------------
+
+@bot.command(name="npclookup")
+async def npclookup(ctx, npc, infotype):
+    output = npcquery(npc, infotype)
+    await ctx.send(output)
 
 
+# -------------------------------------------------------------------
 
--------------------------------------------------------------------
-"""
 
-#load the key
+# load the key
 load_dotenv()
-#get the key from the environment
+# get the key from the environment
 KEY = os.getenv('BOT_TOKEN')
-#run the bot with the key
+# run the bot with the key
 bot.run(KEY)
