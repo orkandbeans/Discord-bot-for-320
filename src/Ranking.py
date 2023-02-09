@@ -1,23 +1,41 @@
 from db import db as database
 
 
-class Calculator():
+
+class BRIAN():
+
+    def __init__(self):
+        self.scoreCalculator = ScoreCalculator()
+        self.roleController = RoleController()
+
+
+
+
+    
+        
+
+
+class RoleController():
+
+
+
+
 
     pass
 
 
-class Handler():
+class RoleModule():
 
     def addMember(self, id):
 
-        command = "INSERT INTO members VALUES ((SELECT max(member_id) FROM members)+1,'" + id + "',0)"
-        database.execute(command)
+        command = "INSERT INTO members VALUES ((SELECT max(member_id) FROM members)+1,?,0)"
+        database.execute(command,id)
         database.commit()
 
     def removeMember(self,id):
 
-        command = "DELETE FROM members WHERE member_name = '" + id + "'"
-        database.execute(command)
+        command = "DELETE FROM members WHERE member_name = ?"
+        database.execute(command,id)
         database.commit()
 
     def createDb(self):
@@ -33,12 +51,17 @@ class Handler():
         database.commit()
 
 
-class RoleManager():
 
+class ScoreCalculator():
+
+    
     pass
 
+class ScoreModule():
+    
+    pass
 
-class TimeMachine():
+class WordDict():
 
     pass
 
@@ -47,17 +70,13 @@ class TimeMachine():
 def main():
 
     
-    handler = Handler()
-    #handler.dropDb()
-    handler.createDb()
-    #handler.removeMember("jimmy")
-    #handler.addMember("jimmy")
-    #handler.addMember("jaden")
-    
-
-
-
-
-
+    brian = RoleModule()
+    #brian.dropDb()
+    brian.createDb()
+    brian.removeMember("jimmy")
+    #brian.addMember("jimmy")
+    #brian.addMember("jaden")
+   
+   
 if __name__ == "__main__":
     main()
