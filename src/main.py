@@ -5,7 +5,8 @@ from dotenv import load_dotenv
 import random
 import os
 
-from lorelookup import *
+
+from osrsinfo import *
 
 # Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
@@ -27,10 +28,11 @@ async def on_ready():
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
 
-@bot.command(name="npclookup")
-async def npclookup(ctx, npc, infotype):
-    output = npcquery(npc, infotype)
-    await ctx.send(output)
+@bot.tree.command(name="osrsinfo")
+async def osrs_info_command(interaction: discord.Interaction, entity_type: str, info_type: str, name: str):
+    #need to find a way to forma and present args better to the command view
+    CommandView.__init__(user_args)
+    await interaction.response.send_message(output)
 
 
 # -------------------------------------------------------------------
