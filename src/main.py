@@ -31,8 +31,8 @@ async def on_ready():
 @bot.tree.command(name="osrsinfo")
 async def osrs_info_command(interaction: discord.Interaction, entity_type: str, info_type: str, name: str):
     #need to find a way to forma and present args better to the command view
-    CommandView.__init__(user_args)
-    await interaction.response.send_message(output)
+    # CommandView.__init__(user_args)
+    # await interaction.response.send_message(output)
 
 
 # -------------------------------------------------------------------
