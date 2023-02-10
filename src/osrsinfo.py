@@ -88,7 +88,7 @@ class ArgParser:
     def __parse_from_page_query_response(str) -> list[str]:
         pass
 
-    def __parse_from_user_selection(str) -> list[Str]:
+    def __parse_from_user_selection(str) -> list[str]:
         pass
 
     def __parse_error_response(str) -> list[str]:
