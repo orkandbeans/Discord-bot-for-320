@@ -39,6 +39,15 @@ async def npclookup(ctx, npc, infotype):
     await ctx.send(output)
 
 
+@bot.event
+async def on_message(message):
+    
+    if message.author == bot.user:
+        return
+
+    Brian.botCommand("updateScore",message.author,message.content)
+
+
 # -------------------------------------------------------------------
 
 

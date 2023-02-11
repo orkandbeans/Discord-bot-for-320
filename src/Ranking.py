@@ -138,7 +138,7 @@ class ScoreModule():
     def adjustScore(self,name,aL):
         #adjust the score of "name" by "amount" in the database
         command = "UPDATE members SET ranking_score=ranking_score + 1, happy=happy + ?2, angry=angry + ?3, funny=funny + ?4 WHERE member_name=?1"
-        database.execute(str(command),name,aL[0],aL[1],aL[2])
+        database.execute(str(command),str(name),aL[0],aL[1],aL[2])
         database.commit()
         
 
