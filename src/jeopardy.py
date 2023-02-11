@@ -1,7 +1,6 @@
 #Jake Onkka --Jeopardy Features --CSE320
 import json
 
-import lamda as lamda
 
 
 def startgame(command):#, username, channel):
@@ -29,13 +28,29 @@ def openfile():
             round = item["round"]
             show_number = item["show_number"]
             air_date = item["air_date"]
-        question_data = {
-            "value": value,
-            "question": question,
-            "answer": answer,
-            "round": round,
-            "show_number": show_number,
-            "air_date": air_date
-        }
-        questions.append(question_data)
-    print(questions[0])     #testing
+            question_data = {
+                "value": value,
+                "question": question,
+                "answer": answer,
+                "round": round,
+                "show_number": show_number,
+                "air_date": air_date,
+            }
+            questions.append(question_data)
+    # Sort the list of questions by value
+    sorted_questions = sorted(questions, key=lambda x: int(x["value"].replace("$", "").replace(",", ""))) #comparing by strings give wrong value comparison, convert to int
+
+    # Create a new list that only includes questions with unique values
+    ordered_List = []
+    seen_values = set()
+    for q in sorted_questions:
+        if q["value"] not in seen_values:
+            ordered_List.append(q)
+            seen_values.add(q["value"])
+
+    print(ordered_List[0])  #Testing to make sure lowest value to highest value
+    print(ordered_List[1])
+    print(ordered_List[2])
+    print(ordered_List[3])
+    print(ordered_List[4])
+    print(ordered_List[5])
