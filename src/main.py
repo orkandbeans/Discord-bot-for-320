@@ -41,13 +41,13 @@ async def npclookup(ctx, npc, infotype):
 
 @bot.event
 async def on_message(message):
-    
     if message.author == bot.user:
         return
+    Brian.updateScore(message.author,message.content)
 
-    Brian.botCommand("updateScore",message.author,message.content)
-
-
+@bot.event
+async def on_member_ban(guild, member):
+    Brian.addRemoveMember(member.name,False)
 # -------------------------------------------------------------------
 
 

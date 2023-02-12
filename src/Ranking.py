@@ -20,18 +20,15 @@ class BRIAN():
         if comType == "updateMembers":#This will update the database with each member in the discord guild, adding them if they don't exist ignoring if they do
             for member in name:
                 if self.memberController.addMember(member) != 0:
-                    print("ERROR: Failed to add %s to the database",member)
-        
-        if comType == "updateScore":#This will change the score of a member based on what the member said in the message they sent
-            if self.scoreCalculator.changeScore(name,self.scoreCalculator.calculateStr(message)) != 0:
-                print("ERROR: Failed to add %s to the database",member)
+                    print("ERROR: Failed to add %s to the database.",member)
 
         return
-    
-    #probably wont need these
+
     def updateScore(self,name,message):
         #change the member "name"'s score based on what they said in their message
-        pass
+        if self.scoreCalculator.changeScore(name,self.scoreCalculator.calculateStr(message)) != 0:
+            print("ERROR: Failed to change %s's score.",name)
+        
 
     def resetRoles(self,name):
         #reset the roles of the member back to default (given their rankingscore)
@@ -43,9 +40,13 @@ class BRIAN():
 
     def addRemoveMember(self,name,addMember):
         #remove or add a member from the database based on the variable, "addMember"
-        pass
 
-    
+        if addMember:
+            return
+
+        if self.memberController.removeMember(name) != 0:
+            print("ERROR: Failed to remove %s to the database.")
+        return
 
 
 class MemberController():
@@ -55,35 +56,34 @@ class MemberController():
 
     def roleCheck(self,name):
         #check a member's roles from the db and return a list of roles that the member has
-        return([])
+        return []
 
     def removeMember(self,name):
         #remove a member from the db based on their name. return 0 on success and 1 on failure
-        return(0)
+        return self.memberModule.removeMember(name)
     
     def addMember(self,name):
         #add a member to the db with member_name = "name". return 0 on success and 1 on failure
-        self.memberModule.addMember(name)
-        return(0)
+        return self.memberModule.addMember(name)
         
     def addRole(self,name,role):
         #add a specific role to the member. return 0 on success and 1 on failure
-        return(0)
+        return 0
 
     def removeRole(self,name,role):
         #remove a specific role from the member. return 0 on success and 1 on failure
-        return(0)
+        return 0
         
 
 class RoleModule():
     
     def adjustSpecificRole(self,name,role,addRole):
         #if addRole is true, add a specific node to a member, else, remove a specific role from a member. 
-        return(0)
+        return 0
 
     def getRoles(self,name):
         #get all roles that member "name" has. return list of roles
-        return([])
+        return []
 
 
 class MemberModule():
@@ -91,25 +91,30 @@ class MemberModule():
     def addMember(self, name):#insert a member into the members table with member_name = "name", if exists ignore this command
         command = "INSERT OR IGNORE INTO members VALUES ((SELECT max(member_id) FROM members)+1,?,0,0,0,0)"
         database.execute(str(command),str(name))
-        database.commit()
-        return(0)
+        return self.safeCommit()
 
     def removeMember(self,name):#remove a member from the members table with member_name = "name"
         command = "DELETE FROM members WHERE member_name = ?"
         database.execute(command,name)
-        database.commit()
-        return(0)
+        return self.safeCommit()
 
     def dropDb(self):#drop the members table from the database
         dropCommand = "DROP TABLE members"
         database.execute(dropCommand)
-        database.commit()
-        return(0)
+        return self.safeCommit()
 
     def getMember(self,name):#get the member with member_name = "name"
         command = "SELECT * FROM members WHERE member_name = ?"
         database.execute(command,name)
-        return(0)
+        return self.safeCommit()
+
+    def safeCommit(self):
+        if database.rowCount() == 1:
+            database.commit()
+            return 0
+        return 1
+        
+    
 
 class ScoreCalculator():
 
@@ -119,7 +124,7 @@ class ScoreCalculator():
     
     def changeScore(self,name,attributeList):#increment the member's score by the chat increment amount and increment each attribute score by the values in "attributeList"
         self.scoreModule.adjustScore(name,attributeList)
-        return(0)
+        return 0
 
     def calculateStr(self,message):#calculate the score of a specific string that a member sent
         attributeList = [0,0,0] #this is a list that tracks how nice, mean, and funny someone is. [nice, mean, funny] 
@@ -128,7 +133,7 @@ class ScoreCalculator():
             if word in self.wordDict:
                 attributeList[self.wordDict[word][0]] += self.wordDict[word][1]
 
-        return(attributeList)
+        return attributeList
 
 
 class ScoreModule():
