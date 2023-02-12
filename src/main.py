@@ -30,11 +30,16 @@ async def on_ready():
 
 @bot.command(name="jeopardy", pass_context=True)
 async def jeopardy(ctx, arg):
-   # print(f"{arg.author} ({arg.channel})")
-    #output = startgame(arg, arg.author, arg.channel)
-        startgame("custom")
-   # await ctx.send(output)
+    handle = myhandle(arg)      #user assumed to input "custom" to start a game
+    if handle == 'custom':
+        output = startgame(arg)
+        await ctx.send(output['question'])
+        def check(m):       #only allow the author to answer
+            return m.author == ctx.author
+    msg = await bot.wait_for('message', check=check)    #wait for author to type in answer
 
+    result = answer(output['answer'], msg.content, output['value'])
+    await ctx.send("You got " + result)
 # -------------------------------------------------------------------
 
 
