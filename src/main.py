@@ -47,7 +47,13 @@ async def on_message(message):
 
 @bot.event
 async def on_member_ban(guild, member):
-    Brian.addRemoveMember(member.name,False)
+    print(member,guild)#member name without number?????
+    Brian.addRemoveMember(member,False)
+
+@bot.event
+async def on_member_join(member):
+    print(member)
+    Brian.addRemoveMember(member,True)
 # -------------------------------------------------------------------
 
 

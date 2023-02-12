@@ -42,10 +42,12 @@ class BRIAN():
         #remove or add a member from the database based on the variable, "addMember"
 
         if addMember:
+            if self.memberController.addMember(name) != 0:
+                print("ERROR: Failed to add %s to the database.",name)
             return
 
         if self.memberController.removeMember(name) != 0:
-            print("ERROR: Failed to remove %s to the database.")
+            print("ERROR: Failed to remove %s to the database.",name)
         return
 
 
@@ -95,7 +97,7 @@ class MemberModule():
 
     def removeMember(self,name):#remove a member from the members table with member_name = "name"
         command = "DELETE FROM members WHERE member_name = ?"
-        database.execute(command,name)
+        database.execute(str(command),str(name))
         return self.safeCommit()
 
     def dropDb(self):#drop the members table from the database
@@ -105,7 +107,7 @@ class MemberModule():
 
     def getMember(self,name):#get the member with member_name = "name"
         command = "SELECT * FROM members WHERE member_name = ?"
-        database.execute(command,name)
+        database.execute(str(command),str(name))
         return self.safeCommit()
 
     def safeCommit(self):
@@ -147,6 +149,9 @@ class ScoreModule():
 
 
 def main():
+    mm = MemberModule()
+    mm.removeMember('Logansclone#1316')
+
     pass
    
 if __name__ == "__main__":
