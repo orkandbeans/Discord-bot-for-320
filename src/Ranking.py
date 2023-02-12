@@ -8,6 +8,7 @@ class BRIAN():
         self.scoreCalculator = ScoreCalculator()
         self.memberController = MemberController()  
 
+        #when a BRIAN is created, make sure there is a database to access. 
         createCommand = "CREATE TABLE IF NOT EXISTS members(member_id INTEGER PRIMARY KEY, member_name TEXT UNIQUE, ranking_score INTEGER, happy INTEGER, angry INTEGER, funny INTEGER)"
         database.execute(createCommand)
         database.commit()
@@ -16,15 +17,18 @@ class BRIAN():
     def botCommand(self,comType,name,message):
         #take a bot command and determine what needs to be changed. comType will tell the method what to do.
         
-        if comType == "updateMembers":
+        if comType == "updateMembers":#This will update the database with each member in the discord guild, adding them if they don't exist ignoring if they do
             for member in name:
-                self.memberController.addMember(member)
+                if self.memberController.addMember(member) != 0:
+                    print("ERROR: Failed to add %s to the database",member)
         
-        if comType == "updateScore":
-            self.scoreCalculator.changeScore(name,self.scoreCalculator.calculateStr(message))
+        if comType == "updateScore":#This will change the score of a member based on what the member said in the message they sent
+            if self.scoreCalculator.changeScore(name,self.scoreCalculator.calculateStr(message)) != 0:
+                print("ERROR: Failed to add %s to the database",member)
 
         return
     
+    #probably wont need these
     def updateScore(self,name,message):
         #change the member "name"'s score based on what they said in their message
         pass
@@ -51,7 +55,7 @@ class MemberController():
 
     def roleCheck(self,name):
         #check a member's roles from the db and return a list of roles that the member has
-        return(0)
+        return([])
 
     def removeMember(self,name):
         #remove a member from the db based on their name. return 0 on success and 1 on failure
@@ -75,58 +79,52 @@ class RoleModule():
     
     def adjustSpecificRole(self,name,role,addRole):
         #if addRole is true, add a specific node to a member, else, remove a specific role from a member. 
-        pass
+        return(0)
 
     def getRoles(self,name):
         #get all roles that member "name" has. return list of roles
-        pass
+        return([])
 
 
 class MemberModule():
 
-    def addMember(self, name):
+    def addMember(self, name):#insert a member into the members table with member_name = "name", if exists ignore this command
         command = "INSERT OR IGNORE INTO members VALUES ((SELECT max(member_id) FROM members)+1,?,0,0,0,0)"
         database.execute(str(command),str(name))
         database.commit()
+        return(0)
 
-    def removeMember(self,name):
-
+    def removeMember(self,name):#remove a member from the members table with member_name = "name"
         command = "DELETE FROM members WHERE member_name = ?"
         database.execute(command,name)
         database.commit()
+        return(0)
 
-    def dropDb(self):
-
+    def dropDb(self):#drop the members table from the database
         dropCommand = "DROP TABLE members"
         database.execute(dropCommand)
         database.commit()
+        return(0)
 
-    def getMember(self,name):
-
+    def getMember(self,name):#get the member with member_name = "name"
         command = "SELECT * FROM members WHERE member_name = ?"
         database.execute(command,name)
-
-
-
+        return(0)
 
 class ScoreCalculator():
 
-    def __init__(self):
+    def __init__(self):#store the word dictionary in self.wordDict in order to rank the attribute scores of each member's messages
         self.scoreModule = ScoreModule()
-        self.wordDict = {"please":(0,5),"hate":(1,5),"LOL":(2,5)}
+        self.wordDict = {"please":(0,5),"hate":(1,5),"LOL":(2,5)}#the format is "word of interest":(attributeID,attributeIncrement)
     
-    def changeScore(self,name,attributeList):
-        #increment the member's score by the chat increment amount plus "extra"
-
+    def changeScore(self,name,attributeList):#increment the member's score by the chat increment amount and increment each attribute score by the values in "attributeList"
         self.scoreModule.adjustScore(name,attributeList)
-
         return(0)
 
-    def calculateStr(self,message):
-        #calculate the score of a specific string that a member sent
+    def calculateStr(self,message):#calculate the score of a specific string that a member sent
         attributeList = [0,0,0] #this is a list that tracks how nice, mean, and funny someone is. [nice, mean, funny] 
 
-        for word in message.split():
+        for word in message.split():#for each word in the members chat message, check if it matches a key in the wordDict and adjust score accordingly
             if word in self.wordDict:
                 attributeList[self.wordDict[word][0]] += self.wordDict[word][1]
 
@@ -135,8 +133,7 @@ class ScoreCalculator():
 
 class ScoreModule():
     
-    def adjustScore(self,name,aL):
-        #adjust the score of "name" by "amount" in the database
+    def adjustScore(self,name,aL):#adjust the ranking score of "name" by 1 and each attribute by the amount described by the list "aL"
         command = "UPDATE members SET ranking_score=ranking_score + 1, happy=happy + ?2, angry=angry + ?3, funny=funny + ?4 WHERE member_name=?1"
         database.execute(str(command),str(name),aL[0],aL[1],aL[2])
         database.commit()
