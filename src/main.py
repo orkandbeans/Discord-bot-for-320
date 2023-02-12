@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 
 import random
 import os
+from geoguessr import geoguessr_game
 
 #Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
@@ -21,17 +22,23 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-"""
------------------INSERT BOT COMMANDS HERE--------------------------
 
+#-----------------INSERT BOT COMMANDS HERE--------------------------
 
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
 
--------------------------------------------------------------------
-"""
+    if message.content.lower() == 'geoguessr':
+        await geoguessr_game(bot, message)
+#-------------------------------------------------------------------
+
 
 #load the key
 load_dotenv()
 #get the key from the environment
 KEY = os.getenv('BOT_TOKEN')
 #run the bot with the key
+
 bot.run(KEY)
