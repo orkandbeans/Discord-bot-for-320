@@ -1,5 +1,46 @@
 import time
 
+
+
+class G_game:
+
+    def __init__(self, player, location):
+        self.player = player
+        self.location = location
+        self.round_num = 0
+    
+    def start_game():
+        return
+    
+    def calc_distance():
+        return
+    
+    def choose_location():
+        return
+    
+    def get_image():
+        return
+    
+    def get_player_guess():
+        return
+    
+    def get_leaderboard():
+        return
+    
+class Player:
+    def __init__(self, name, score, games_played):
+        self.name = name
+        self.score = score
+        self.games_played = games_played
+
+class Locations:
+    def __init__(self, name, min_latitude, max_latitude, min_longitude, max_longitude):
+        self.name = name
+        self.min_latitude = min_latitude
+        self.max_latitude = max_latitude
+        self.min_longitude = min_longitude
+        self.max_longitude = max_longitude
+
 async def introduce_user(message):
     await message.channel.send('Welcome to Geoguessr!')
     time.sleep(1)
