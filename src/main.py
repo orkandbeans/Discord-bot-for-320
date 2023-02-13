@@ -10,15 +10,12 @@ import os
 #Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
 
-<<<<<<< Updated upstream
 #when bot is logged in
-=======
 # Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 AI = openAI()
 
 # when bot is logged in
->>>>>>> Stashed changes
 @bot.event
 async def on_ready():
     print("Bot is Up and Ready")
@@ -30,11 +27,6 @@ async def on_ready():
     #else print exception
     except Exception as e:
         print(e)
-
-<<<<<<< Updated upstream
-"""
------------------INSERT BOT COMMANDS HERE--------------------------
-=======
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
 @bot.tree.command(name="aisetup", description = "Start setup process of openAI API for arnold bot for the server")
@@ -65,12 +57,6 @@ async def dalle(ctx: discord.Interaction, prompt: str):
 async def npclookup(ctx, npc, infotype):
     output = npcquery(npc, infotype)
     await ctx.send(output)
->>>>>>> Stashed changes
-
-
-
--------------------------------------------------------------------
-"""
 
 #load the key
 load_dotenv()
