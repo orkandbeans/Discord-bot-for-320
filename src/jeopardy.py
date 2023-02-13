@@ -87,3 +87,52 @@ def savecategory(givencategory):
     with open("jeopardydata.txt", "a") as file:     #save the dict into a temp file, this temp file will be used to play the game
         for x in range(len(ordered_List)):
             file.write(str(ordered_List[x]))
+def checkcategoryamt(input):
+    try:
+        value = int(input)
+        if value >= 0 and value <= 6:
+            return True
+        else:
+            return False
+    except ValueError:
+        return False
+
+def drawtable(categories):
+    values = [[200, 400, 600, 800, 1000] for i in range(len(categories))]
+
+    message = "```\nCategories:\n"
+
+    # Find the length of the longest category
+    longest_category_length = max(len(category) for category in categories)
+
+    for category_index, category in enumerate(categories):
+        message += category + " " * (longest_category_length - len(category)) + "\t\t"
+        for value in values[category_index]:
+            if value is not None:
+                message += str(value) + "\t"
+            else:
+                message += " " * len(str(value)) + "\t"
+        message += "\n"
+
+    message += "```"
+    return message
+def updatetable(categories, category, value):
+    values = [[200, 400, 600, 800, 1000] for i in range(len(categories))]
+    myvalues = [200, 400, 600, 800, 1000]
+    value_index = myvalues.index(value)
+    category_index = categories.index(category)
+    values[category_index][value_index] = None      #delete the value of a specified category
+    message = "```\nCategories:\n"
+    longest_category_length = max(len(category) for category in categories)     #reformatting same as drawtable
+
+    for category_index, category in enumerate(categories):
+        message += category + " " * (longest_category_length - len(category)) + "\t\t"
+        for value in values[category_index]:
+            if value is not None:
+                message += str(value) + "\t"
+            else:
+                message += " " * len(str(value)) + "\t"
+        message += "\n"
+
+    message += "```"
+    return message
