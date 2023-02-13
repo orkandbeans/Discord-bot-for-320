@@ -6,7 +6,7 @@ import Ranking
 from openAI import openAI
 import random
 import os
-#from lorelookup import *
+from lorelookup import *
 from osrsinfo import *
 
 #Create bot declaration with intents
