@@ -1,5 +1,6 @@
 import time
 import random
+import requests
 
 from location_info import states
 
@@ -10,7 +11,7 @@ class G_game:
         self.cur_location = location
         self.round_num = 0
         
-    def load_states():
+    def load_states(self):
         location_list = []
         for state in states:
             location_list.append(Location(state["name"],
@@ -29,6 +30,8 @@ class G_game:
             self.choose_location(location_list)
 
             self.get_image()
+            
+            self.display_image()
 
             self.get_player_guess()
 
@@ -39,23 +42,47 @@ class G_game:
             self.round_num += 1
         return
     
-    def calc_distance():
+    def calc_distance(self):
         return
     
     def choose_location(self, location_list):
         self.cur_location = random.choice(location_list)
         return
     
-    def get_image():
+    def get_image(self):
+        random.seed(time.time())
+        rand_latitude = random.uniform(self.cur_location.min_latitude, self.cur_location.max_latitude)
+        rand_longitude = random.uniform(self.cur_location.min_longitude, self.cur_location.max_longitude)
+        
+        api_key = ""
+        location = (rand_latitude,rand_longitude)
+        size = "400x400"
+        fov = "120"  # in degrees
+        heading = random.randint(0, 360)  # in degrees
+        pitch = "10"  # in degrees
+
+        url = f"https://maps.googleapis.com/maps/api/streetview?size={size}&location={location}&fov={fov}&heading={heading}&pitch={pitch}&key={api_key}"
+
+        response = requests.get(url)
+
+        if response.status_code == 200:
+            print("gotimage", self.cur_location.name)
+            return response.content
+        else:
+            print("Failed to retrieve image. Response status code:", response.status_code)
         return
     
-    def get_player_guess():
+    def display_image(self):
+        
         return
     
-    def display_results():
+    def get_player_guess(self):
         return
     
-    def get_leaderboard():
+    def display_results(self):
+        return
+    
+    def get_leaderboard(self):
         return
     
 class Player:
@@ -111,13 +138,16 @@ async def geoguessr_game(bot, message):
             num_rounds = int(rounds)
         except ValueError:
             await message.channel.send(f'{rounds.content} is not a number')
+            
+    game = G_game(None, None)
+    game.start_game(num_rounds)
     
 
 
 def main():
     print("This is the main function.")
-    game = G_game
-    game.start_game(game, 10)
+    game = G_game(None, None)
+    game.start_game(10)
 
 if __name__ == "__main__":
     main()
