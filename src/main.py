@@ -35,24 +35,35 @@ async def jeopardy(ctx, arg):
     handle = myhandle(arg)      #user assumed to input "custom" to start a game
     if handle == 'custom':
         await ctx.send("How many categories would you like to play with? Pick between 1 and 5.")
-        msg = await bot.wait_for('message', check=check)  # wait for author to type in answer
-        while not isinstance(msg.content, int) and 0 > int(msg.content) > 6:
+        usermsg = await bot.wait_for('message', check=check)  # wait for author to type in answer
+        while not isinstance(usermsg.content, int) and 0 > int(usermsg.content) > 6:
             await ctx.send("Please enter a valid int")
-            msg = await bot.wait_for('message', check=check)  # wait for author to type in answer
-            if not isinstance(msg.content, int) and 0 < int(msg.content) < 6: break
-        #msg is how many categories to play with
-        message = await ctx.send("``` Choosing categories: ```")
-        output = startgame(arg, msg.content)
-        newmessage = message.content.strip("```")
-        #await ctx.send(msg.content)
-        for i in range(int(msg.content)):
-            await message.edit(content=f"```{output[i]}```")
+            usermsg = await bot.wait_for('message', check=check)  # wait for author to type in answer
+            if not isinstance(usermsg.content, int) and 0 < int(usermsg.content) < 6: break
+        #usermsg is how many categories to play with
+        botmessage = await ctx.send("``` Choosing categories: ```")
+        output = startgame(arg, usermsg.content)
+
+#####   FORMATTING OF "Game"
+        botmessageupdate = "```\nCategories:\n"
+        # Find the length of the longest category
+        longest_category_length = max(len(category) for category in output)
+
+        for category in output:
+            botmessageupdate += category + " " * (longest_category_length - len(category)) + "\t\t"
+            for i in range(200, 1100, 200):
+                botmessageupdate += str(i) + "\t"
+            botmessageupdate += "\n"
+
+        botmessageupdate += "```"
+#####
+        await botmessage.edit(content=botmessageupdate)
         #await ctx.send(output['question'])
 
 
-    #msg = await bot.wait_for('message', check=check)    #wait for author to type in answer
+    #usermsg = await bot.wait_for('message', check=check)    #wait for author to type in answer
 
-   # result = answer(output['answer'], msg.content, output['value'])
+   # result = answer(output['answer'], usermsg.content, output['value'])
    # await ctx.send("You got " + result)
 # -------------------------------------------------------------------
 

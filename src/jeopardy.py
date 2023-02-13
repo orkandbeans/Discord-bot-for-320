@@ -14,7 +14,9 @@ def answer(answer, arg, value):
     if arg != answer:
         return str("-" + value)
 def startgame(command, numberofcategories):#, username, channel):
+    ##########
 
+    ##########
     command = command.lower()
     if command == 'custom':     #Custom Game Solo: In Progress
     #    print(f"{username} from: ({channel})")
