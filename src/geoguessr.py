@@ -1,4 +1,5 @@
 import time
+import random
 
 from location_info import states
 
@@ -6,7 +7,7 @@ class G_game:
 
     def __init__(self, player, location):
         self.player = player
-        self.location = location
+        self.cur_location = location
         self.round_num = 0
         
     def load_states():
@@ -20,20 +21,38 @@ class G_game:
                                 )
         return location_list
     
-    def start_game(self):
+    def start_game(self, num_rounds):
+        #load state information
         location_list = self.load_states()
+        
+        while self.round_num < num_rounds:
+            self.choose_location(location_list)
+
+            self.get_image()
+
+            self.get_player_guess()
+
+            self.calc_distance()
+            
+            self.display_results()
+            
+            self.round_num += 1
         return
     
     def calc_distance():
         return
     
-    def choose_location(location_list):
+    def choose_location(self, location_list):
+        self.cur_location = random.choice(location_list)
         return
     
     def get_image():
         return
     
     def get_player_guess():
+        return
+    
+    def display_results():
         return
     
     def get_leaderboard():
@@ -98,7 +117,7 @@ async def geoguessr_game(bot, message):
 def main():
     print("This is the main function.")
     game = G_game
-    game.start_game(game)
+    game.start_game(game, 10)
 
 if __name__ == "__main__":
     main()
