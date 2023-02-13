@@ -1,6 +1,6 @@
 import time
 
-
+from location_info import states
 
 class G_game:
 
@@ -8,14 +8,26 @@ class G_game:
         self.player = player
         self.location = location
         self.round_num = 0
+        
+    def load_states():
+        location_list = []
+        for state in states:
+            location_list.append(Location(state["name"],
+                                          state["min_latitude"],
+                                          state["max_latitude"],
+                                          state["min_longitude"],
+                                          state["max_longitude"])
+                                )
+        return location_list
     
-    def start_game():
+    def start_game(self):
+        location_list = self.load_states()
         return
     
     def calc_distance():
         return
     
-    def choose_location():
+    def choose_location(location_list):
         return
     
     def get_image():
@@ -33,7 +45,7 @@ class Player:
         self.score = score
         self.games_played = games_played
 
-class Locations:
+class Location:
     def __init__(self, name, min_latitude, max_latitude, min_longitude, max_longitude):
         self.name = name
         self.min_latitude = min_latitude
@@ -81,5 +93,14 @@ async def geoguessr_game(bot, message):
         except ValueError:
             await message.channel.send(f'{rounds.content} is not a number')
     
-            
+
+
+def main():
+    print("This is the main function.")
+    game = G_game
+    game.start_game(game)
+
+if __name__ == "__main__":
+    main()
+
                 
