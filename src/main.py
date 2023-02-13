@@ -32,29 +32,29 @@ async def on_ready():
 async def jeopardy(ctx, arg):
     def check(m):  # only allow the author to answer
         return m.author == ctx.author
-    handle = myhandle(arg)      #user assumed to input "custom" to start a game
+    handle = Input.myhandle(arg)      #user assumed to input "custom" to start a game
     if handle == 'custom':
         await ctx.send("How many categories would you like to play with? Pick between 1 and 5.")
         usermsg = await bot.wait_for('message', check=check)  # wait for author to type in answer
 
-        while not checkcategoryamt(usermsg.content):
+        while not Input.checkcategoryamt(usermsg.content):
             await ctx.send("Please enter a valid int")
             usermsg = await bot.wait_for('message', check=check)
         #usermsg is how many categories to play with
         botmessage = await ctx.send("``` Choosing categories: ```")
-        output = startgame(arg, usermsg.content)
+        output = GameStart.startgame(arg, usermsg.content)
 
 #####   FORMATTING OF "Game"
-        botmessageupdate = drawtable(output)
+        botmessageupdate = GameBoard.drawtable(output)
 #####
-        await botmessage.edit(content=botmessageupdate)
+        await botmessage.edit(content=botmessageupdate) #Game table is drawn, categories and values printed
         #await ctx.send(output['question'])
+    usermsg = await bot.wait_for('message', check=check)    #wait for author to choose category
+    categoryusermsg, valueusermsg = usermsg.content.split("# ") #user must type "Category# Value"
 
-
-    usermsg = await bot.wait_for('message', check=check)    #wait for author to type in answer
-    categoryusermsg, valueusermsg = usermsg.content.split("# ")
-
-    botmessageupdate = updatetable(output,categoryusermsg, int(valueusermsg))
+    botmessageupdate = GameBoard.updatetable(output,categoryusermsg, int(valueusermsg))
+    question = GameStart.pullquestion(categoryusermsg,valueusermsg)
+    await ctx.send(question["question"])
     await botmessage.edit(content=botmessageupdate)
    # result = answer(output['answer'], usermsg.content, output['value'])
    # await ctx.send("You got " + result)
