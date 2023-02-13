@@ -1,6 +1,8 @@
 import time
 import random
 import requests
+import sys
+import select
 
 from location_info import states
 
@@ -22,27 +24,26 @@ class G_game:
                                 )
         return location_list
     
-    def start_game(self, num_rounds):
+    def start_game(self, num_rounds, bot, message):
         #load state information
         location_list = self.load_states()
         
         while self.round_num < num_rounds:
             self.choose_location(location_list)
 
-            self.get_image()
+            image = self.get_image()
             
-            self.display_image()
+            self.display_image(image, message)
 
-            self.get_player_guess()
+            player_guess = self.get_player_guess(bot, message)
+            
+            self.check_player_guess(player_guess, message)
 
-            self.calc_distance()
+            self.calc_distance(player_guess)
             
             self.display_results()
             
             self.round_num += 1
-        return
-    
-    def calc_distance(self):
         return
     
     def choose_location(self, location_list):
@@ -72,11 +73,37 @@ class G_game:
             print("Failed to retrieve image. Response status code:", response.status_code)
         return
     
-    def display_image(self):
-        
+    async def display_image(self, image, message):
+        await message.channel.send(image)
+        await message.channel.send("Which state was this picture taken in?")
         return
     
-    def get_player_guess(self):
+    async def get_player_guess(self, bot, message):
+        
+        def check_user(new_message):
+            return new_message.author == message.author and new_message.channel == message.channel
+    
+        time_to_guess = 10
+        start_time = time.time()
+        
+        guess, _, _ = select.select([await bot.wait_for('message', check=check_user)], [], [], time_to_guess)
+        
+        if guess:
+            input_value = guess.content
+            return input_value
+        else:
+            print("Times up!")
+        return
+    
+    #check the players guess against 
+    async def check_player_guess(self, player_guess, message): 
+        if player_guess == self.cur_location:
+            await message.channel.send("Correct!")
+        else:
+            await message.channel.send(f"Sorry that is incorrect, it was taken in {self.cur_location}")
+        return 
+        
+    def calc_distance(self, player_guess):
         return
     
     def display_results(self):
@@ -140,7 +167,7 @@ async def geoguessr_game(bot, message):
             await message.channel.send(f'{rounds.content} is not a number')
             
     game = G_game(None, None)
-    game.start_game(num_rounds)
+    game.start_game(num_rounds, bot, message)
     
 
 
