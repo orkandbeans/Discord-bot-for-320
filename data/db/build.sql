@@ -3,7 +3,7 @@ CREATE TABLE IF NOT EXISTS giveAway (
   ChannelID Integer
 );
 
-CREATE TABLE IF NOT EXISTS openAPI (
+CREATE TABLE IF NOT EXISTS openAI (
   ServerID Integer PRIMARY KEY,
-  APIKey String
+  APIKey text
 );
