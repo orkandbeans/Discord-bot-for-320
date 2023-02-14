@@ -1,15 +1,17 @@
+#import jason   # for database
 import discord  # discord API
-import jason    # for database
+import asyncio  # for concurrent code using the async or await syntax.
 
 
 class Soundboard:
-    def constructor(self, message):
+    async def constructor(self, message):
         # store the command and file in instance variables
         self.message = message
         #self.file = file
 
         # initialize instance of the classes and pass them the required variables
         self.audio = Sound(message)
+        await self.audio.play()
         #self.secure = Security(command)
         #self.manage = Uploader(command, secure)
         
@@ -19,25 +21,27 @@ class Sound:
         self.message = message
         # from the command argument derive the file name
         self.audio_file = message.content.split(" ")[1] + ".mp3"
+        self.audio_file = "./Audio_files/" + self.audio_file
         self.sound = None
         self.channel = None
-
+    
+    # def embed
 
     async def connect(self):
         # Join voice channel that the message came from
-        channel = message.author.voice.channel
+        channel = self.message.author.voice.channel
         # get the sound object
-        sound = await channel.connect()
+        self.sound = await channel.connect()
 
     async def play(self):
         # Play the sound file
-        sound.play(discord.FFmpegPCMAudio(audio_file))
-        while sound.is_playing():
+        self.sound.play(discord.FFmpegPCMAudio(self.audio_file))
+        while self.sound.is_playing():
             # finish playing the sound
             await asyncio.sleep(1)
-        sound.stop()
+        self.sound.stop()
         # Disconnect from voice channel
-        await sound.disconnect()
+        await self.sound.disconnect()
     
 """
 class Security:
@@ -58,11 +62,15 @@ class Uploader:
     self.message = message
 """
 
-"""main
+"""main roughdraft
 # Check for the soundboard slash command
     #if message.content.startswith('!soundboard upload'):
-    if message.content.startswith('!soundboard'):
-        activate = Soundboard()
-        await activate.audio.connect()
-        await activate.audio.play()
+"""
+
+"""
+@
+if .content.startswith('!soundboard'):
+    activate = Soundboard()
+    await activate.audio.connect()
+
 """
