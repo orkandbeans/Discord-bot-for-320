@@ -1,16 +1,17 @@
 import time
 import random
 import requests
+import discord
 import sys
-import select
+import io
+import asyncio
 
 from location_info import states
 
 class G_game:
 
-    def __init__(self, player, location):
-        self.player = player
-        self.cur_location = location
+    def __init__(self):
+        self.cur_location = []
         self.round_num = 0
         
     def load_states(self):
@@ -24,20 +25,20 @@ class G_game:
                                 )
         return location_list
     
-    def start_game(self, num_rounds, bot, message):
+    async def start_game(self, num_rounds, bot, message):
         #load state information
         location_list = self.load_states()
         
         while self.round_num < num_rounds:
             self.choose_location(location_list)
-
+            
             image = self.get_image()
             
-            self.display_image(image, message)
-
-            player_guess = self.get_player_guess(bot, message)
+            await self.display_image(image, message)
             
-            self.check_player_guess(player_guess, message)
+            player_guess = await self.get_player_guess(bot, message)
+            
+            await self.check_player_guess(player_guess, message)
 
             self.calc_distance(player_guess)
             
@@ -67,14 +68,15 @@ class G_game:
         response = requests.get(url)
 
         if response.status_code == 200:
-            print("gotimage", self.cur_location.name)
-            return response.content
+            print("Image:", self.cur_location.name, "lat:", rand_latitude, "long:", rand_longitude)
+            return response
         else:
             print("Failed to retrieve image. Response status code:", response.status_code)
         return
     
-    async def display_image(self, image, message):
-        await message.channel.send(image)
+    async def display_image(self, response, message):
+        with io.BytesIO(response.content) as image:
+            await message.channel.send(file=discord.File(image, filename="image.jpg"))
         await message.channel.send("Which state was this picture taken in?")
         return
     
@@ -86,21 +88,23 @@ class G_game:
         time_to_guess = 10
         start_time = time.time()
         
-        guess, _, _ = select.select([await bot.wait_for('message', check=check_user)], [], [], time_to_guess)
-        
-        if guess:
+        guess = ""
+        try:
+            guess = await asyncio.wait_for(bot.wait_for('message', check=check_user), timeout=30.0)
             input_value = guess.content
             return input_value
-        else:
-            print("Times up!")
-        return
+        except asyncio.TimeoutError:
+            await message.channel.send("Times up!")
+            time.sleep(1)
+            return
     
     #check the players guess against 
     async def check_player_guess(self, player_guess, message): 
-        if player_guess == self.cur_location:
+        if player_guess.lower() == self.cur_location.name.lower():
             await message.channel.send("Correct!")
         else:
-            await message.channel.send(f"Sorry that is incorrect, it was taken in {self.cur_location}")
+            await message.channel.send(f"Sorry that is incorrect, it was taken in {self.cur_location.name}")
+        time.sleep(1)
         return 
         
     def calc_distance(self, player_guess):
@@ -157,26 +161,19 @@ async def geoguessr_game(bot, message):
     await message.channel.send('How many rounds would you like to play?')
     time.sleep(1)
     
+    num_rounds = 0
     int_flag = True
     while int_flag:
         rounds = await bot.wait_for('message', check=check_user)
     
         try:
-            num_rounds = int(rounds)
+            num_rounds = int(rounds.content)
+            int_flag = False
         except ValueError:
             await message.channel.send(f'{rounds.content} is not a number')
-            
-    game = G_game(None, None)
-    game.start_game(num_rounds, bot, message)
+            await message.channel.send('How many rounds would you like to play?')
+      
+    game = G_game()
+    await game.start_game(num_rounds, bot, message)  
     
-
-
-def main():
-    print("This is the main function.")
-    game = G_game(None, None)
-    game.start_game(10)
-
-if __name__ == "__main__":
-    main()
-
-                
+    return              

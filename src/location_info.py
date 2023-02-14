@@ -189,7 +189,7 @@ states = [{
 },
 {
 "name": "Nevada",
-"min_latitude": 35.0,
+"min_latitude": 39.0,
 "max_latitude": 42.001944,
 "min_longitude": -120.005833,
 "max_longitude": -114.039167
