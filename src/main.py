@@ -44,6 +44,10 @@ async def on_ready():
 
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
+@bot.command(name="geoguessr")
+async def geoguessr(ctx):
+    await geoguessr_game(bot, ctx)
+
 @bot.tree.command(name="osrsinfo")
 async def osrs_info_command(interaction: discord.Interaction, entity_name: str, search_option: int = 0):
     command_output = osrsinfo(entity_name, search_option)
