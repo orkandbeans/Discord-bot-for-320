@@ -44,6 +44,7 @@ async def on_ready():
 
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
+#command for geoguessr game
 @bot.command(name="geoguessr")
 async def geoguessr(ctx):
     await geoguessr_game(bot, ctx)
