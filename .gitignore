@@ -1,4 +1,6 @@
-__pycache__
+*__pycache__/
+*.png
+*.db
 *.idea
 ./venv/*
 ./venv

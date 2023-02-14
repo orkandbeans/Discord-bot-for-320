@@ -1,32 +1,53 @@
+import asyncio
+
 import discord
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
+import Ranking
 from openAI import openAI
-
 import random
 import os
-
-
+from lorelookup import *
 from osrsinfo import *
 
 
-# Create bot declaration with intents
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+#Create bot declaration with intents
+
+
+
+bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
+#Create BRIAN declaration for ranking
+Brian = Ranking.BRIAN()
 AI = openAI()
 
+
 #when bot is logged in
+
+from jeopardy import *
+
+# Create bot declaration with intents
+bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
+
+
+
+
 @bot.event
 async def on_ready():
     print("Bot is Up and Ready")
 
-    # try to sync all commands that aren't actively in the tree or have been altered
+    #get the guild with all users in our specific discord and run an update on the members of the database
+    memberList = bot.get_guild(1065019755628613682).members
+    Brian.botCommand("updateMembers",memberList,"")
+
+    #try to sync all commands that aren't actively in the tree or have been altered
     try:
         synced = await bot.tree.sync()
         print(f"Synced {len(synced)} command(s)")
     # else print exception
     except Exception as e:
         print(e)
+
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
 @bot.tree.command(name="osrsinfo")
@@ -52,14 +73,88 @@ async def aisetup(ctx: discord.Interaction):
 @app_commands.describe(prompt = "What prompt would you like to generate?")
 async def dalle(ctx: discord.Interaction, prompt: str):
     await ctx.response.send_message("Give us a few seconds to generate your image.")
-    user = ctx.user.id;
+    user = ctx.user.id
     data = AI.dalle.generate(prompt)
     embed = discord.Embed()
     embed.set_image(url=data)
     await ctx.channel.send(f"<@{user}> here's your image for prompt: {prompt}", embed=embed)
 
+@bot.event
+async def on_message(message):
+    if message.author == bot.user:
+        return
+    Brian.updateScore(message.author,message.content)
 
+@bot.event
+async def on_member_ban(guild, member):
+    print(member,guild)#member name without number?????
+    Brian.addRemoveMember(member,False)
+
+@bot.event
+async def on_member_join(member):
+    print(member)
+    Brian.addRemoveMember(member,True)
+
+
+
+@bot.command(name="jeopardy", pass_context=True)
+async def jeopardy(ctx, arg):
+    money = 0
+    def check(m):  # only allow the author to answer
+        return m.author == ctx.author
+    handle = Input.myhandle(arg)      #user assumed to input "custom" to start a game
+    if handle == 'custom':
+        intro = await ctx.send("How many categories would you like to play with? Pick between 1 and 5.")
+        usermsg = await bot.wait_for('message', check=check)  # wait for author to type in answer
+        await usermsg.delete()
+        await intro.delete()
+        while not Input.checkcategoryamt(usermsg.content):
+            await ctx.send("Please enter a valid int")
+            usermsg = await bot.wait_for('message', check=check)
+        #usermsg is how many categories to play with
+        botmessage = await ctx.send("``` Choosing categories: ```")
+        output = GameStart.startgame(arg, usermsg.content)
+
+#####   FORMATTING OF "Game"
+        botmessageupdate = GameBoard.drawtable(output)
+        GameBoard.initcategories(output)
+#####
+        await botmessage.edit(content=botmessageupdate) #Game table is drawn, categories and values printed
+    while(1):
+        usermsg = await bot.wait_for('message', check=check)    #wait for author to choose category
+        #categoryusermsg, valueusermsg = usermsg.content.split("# ") #user must type "Category# Value"
+        while not Input.pickcategory(usermsg.content):   #loop until category chosen correctly
+            error = await ctx.send("Please enter valid category")
+            await usermsg.delete()
+            await asyncio.sleep(1)
+            usermsg = await bot.wait_for('message', check=check)
+            await error.delete()
+        await asyncio.sleep(1)
+        await usermsg.delete()
+        categoryusermsg, valueusermsg = usermsg.content.split("# ")  # user must type "Category# Value"
+        botmessageupdate = GameBoard.updatetable(output, categoryusermsg, int(valueusermsg))
+        question = GameStart.pullquestion(categoryusermsg, valueusermsg)
+        myquestion = await ctx.send(question["question"])    #SEND QUESTION
+        usermsg = await bot.wait_for('message', check=check)
+        result = Input.answer(question["answer"], usermsg.content, valueusermsg)
+        await botmessage.edit(content=botmessageupdate) #UPDATE TABLE
+        if int(result) < 0:
+            sendresult = await ctx.send("Wrong, the correct response is: " + question["answer"])
+        else:
+            sendresult = await ctx.send("Correct!")
+        money += int(result)
+        prize = await ctx.send("You got " + result)
+        await asyncio.sleep(5)
+        await usermsg.delete()
+        await myquestion.delete()
+        await sendresult.delete()
+        await prize.delete()
+        if GameBoard.gameover("hello"): break
+        #if GameBoard.gameover is True: break
+    await ctx.send("You earned " + str(money))
+    await ctx.send("Thanks for playing!")
 # -------------------------------------------------------------------
+
 
 # load the key
 load_dotenv()
