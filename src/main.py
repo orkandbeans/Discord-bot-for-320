@@ -29,11 +29,12 @@ async def on_ready():
         print(e)
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
-
 @bot.tree.command(name="osrsinfo")
-async def osrs_info_command(interaction: discord.Interaction, entity_name: str):
-    output = osrsinfo(entity_name)
-    await interaction.response.send_message(output)
+async def osrs_info_command(interaction: discord.Interaction, entity_name: str, search_option: int = 0):
+    command_output = osrsinfo(entity_name, search_option)
+    await interaction.response.send_message(command_output[0])
+    for i in range(1, len(command_output)):
+        await interaction.followup.send(command_output[i])
 
 @bot.tree.command(name="aisetup", description = "Start setup process of openAI API for arnold bot for the server")
 async def aisetup(ctx: discord.Interaction):
