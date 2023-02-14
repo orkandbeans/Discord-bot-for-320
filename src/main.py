@@ -55,7 +55,7 @@ async def aisetup(ctx: discord.Interaction):
 @app_commands.describe(prompt = "What prompt would you like to generate?")
 async def dalle(ctx: discord.Interaction, prompt: str):
     await ctx.response.send_message("Give us a few seconds to generate your image.")
-    user = ctx.user.id;
+    user = ctx.user.id
     data = AI.dalle.generate(prompt)
     embed = discord.Embed()
     embed.set_image(url=data)
@@ -69,13 +69,13 @@ async def on_message(message):
 
 @bot.event
 async def on_member_ban(guild, member):
-    print(member,guild)#member name without number?????
     Brian.addRemoveMember(member,False)
 
 @bot.event
 async def on_member_join(member):
-    print(member)
     Brian.addRemoveMember(member,True)
+
+
 # -------------------------------------------------------------------
 
 # load the key

@@ -13,6 +13,20 @@ class BRIAN():
         database.execute(createCommand)
         database.commit()
 
+        createCommand = "CREATE TABLE IF NOT EXISTS roles(role_id INTEGER PRIMARY KEY, role_name TEXT UNIQUE, role_cost INTEGER)"
+        database.execute(createCommand)
+        database.commit()
+
+        createCommand = '''CREATE TABLE IF NOT EXISTS rolloc(
+                            Rmember_id INTEGER,
+                            Rrole_id INTEGER,
+                            FOREIGN KEY(Rmember_id) REFERENCES members(member_id),
+                            FOREIGN KEY(Rrole_id) REFERENCES roles(role_id),
+                            UNIQUE(Rmember_id,Rrole_id))'''
+        database.execute(createCommand)
+        database.commit()
+        
+
 
     def botCommand(self,comType,name,message):
         #take a bot command and determine what needs to be changed. comType will tell the method what to do.
@@ -30,9 +44,6 @@ class BRIAN():
             print("ERROR: Failed to change %s's score.",name)
         
 
-    def resetRoles(self,name):
-        #reset the roles of the member back to default (given their rankingscore)
-        pass
 
     def adjustRole(self,name,addRole,role):
         #change the member "name" to either add or delete "role" based on addRole
@@ -68,6 +79,16 @@ class MemberController():
         #add a member to the db with member_name = "name". return 0 on success and 1 on failure
         return self.memberModule.addMember(name)
         
+    def newRole(self,role,scoreToGet):
+        #adds a new role to the database as well as the score needed to get the role.
+        if not scoreToGet:
+            scoreToGet = self.roleModule.getNewRoleScore()
+            if scoreToGet == -1:
+                return 1
+
+        self.roleModule.newRole(role,scoreToGet)
+        return 0
+
     def addRole(self,name,role):
         #add a specific role to the member. return 0 on success and 1 on failure
         return 0
@@ -75,17 +96,66 @@ class MemberController():
     def removeRole(self,name,role):
         #remove a specific role from the member. return 0 on success and 1 on failure
         return 0
+
+    def resetRoles(self,name):
+        #reset the roles of the member back to default (given their rankingscore)
+        self.roleModule.resetRoles(name)
         
 
 class RoleModule():
     
+    def __init__(self):
+        self.roles = {""}
+
+    def getNewRoleScore(self):
+        command = "SELECT max(roleCost) from roles"
+
+    def newRole(self,role,scoreToGet):
+        pass
+
     def adjustSpecificRole(self,name,role,addRole):
         #if addRole is true, add a specific node to a member, else, remove a specific role from a member. 
         return 0
 
+    def resetRoles(self,name):
+        #reset the roles of the member back to default (given their rankingscore)
+        shouldHave = self.getRoles(name)
+        command = "SELECT Rrole_id FROM rolloc where Rmember_id=(SELECT member_id FROM members WHERE member_name=?)"
+        doesHave = database.records(command,name)
+        SHRoleIds = [item[0] for item in shouldHave]
+        doesHave = [item[0] for item in doesHave]
+
+
+        for role in doesHave:
+            if role not in SHRoleIds:
+                command = "DELETE FROM rolloc WHERE Rmember_id = (SELECT member_id FROM members WHERE member_name=?1) AND Rrole_id = ?2"
+                database.execute(str(command),str(name),role)
+                if self.safeCommit():
+                    print("didn't remove this role %d",role)
+
+        for role in shouldHave:#for each role that the member should have, try to insert that role into the database
+            command = "INSERT OR IGNORE INTO rolloc VALUES ((SELECT member_id FROM members WHERE member_name=?),?)"
+            database.execute(str(command),str(name),role[0])
+            if self.safeCommit():
+                print("didn't add this role %d",role[0])
+
+
     def getRoles(self,name):
-        #get all roles that member "name" has. return list of roles
-        return []
+        #get all roles that member "name" is authorized to have. return list of roles as tuples
+        roleList = []
+        memberScore = database.record('SELECT ranking_score FROM members WHERE member_name=?',str(name))
+        result = database.records('SELECT role_id, role_cost FROM roles')
+
+        for cell in result:#for each role that a member should have, append it to the list
+            if memberScore[0] > cell[1]:
+                roleList.append(cell)
+        return roleList
+    
+    def safeCommit(self):#runs the commit command while checking if the table was altered at all. return 0 if database was saved, 1 if not
+        if database.rowCount() == 1:
+            database.commit()
+            return 0
+        return 1
 
 
 class MemberModule():
@@ -110,7 +180,7 @@ class MemberModule():
         database.execute(str(command),str(name))
         return self.safeCommit()
 
-    def safeCommit(self):
+    def safeCommit(self):#runs the commit command while checking if the table was altered at all. return 0 if database was saved, 1 if not
         if database.rowCount() == 1:
             database.commit()
             return 0
@@ -149,8 +219,27 @@ class ScoreModule():
 
 
 def main():
-    mm = MemberModule()
-    mm.removeMember('Logansclone#1316')
+  
+    """command = "INSERT OR IGNORE INTO roles VALUES (1,'pleb',20)"
+    database.execute(str(command))
+    database.commit()
+    command = "INSERT OR IGNORE INTO roles VALUES (2,'teamMember',30)"
+    database.execute(str(command))
+    database.commit()
+    command = "INSERT OR IGNORE INTO roles VALUES (3,'admin',50)"
+    database.execute(str(command))
+    database.commit()"""
+
+    #database.execute("DROP TABLE rolloc")
+    #brian = BRIAN()
+
+    #database.execute("INSERT INTO rolloc VALUES(5,3)")
+    #database.commit()
+
+    rm = RoleModule()
+    rm.resetRoles('orkandbeans#3110')
+
+
 
     pass
    
