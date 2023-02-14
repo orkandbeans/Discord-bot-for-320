@@ -8,40 +8,39 @@ class Soundboard:
         # store the command and file in instance variables
         self.message = message
         #self.file = file
-
         # initialize instance of the classes and pass them the required variables
-        self.audio = Sound(message)
-        await self.audio.play()
-        #self.secure = Security(command)
-        #self.manage = Uploader(command, secure)
         
 
 class Sound:
-    def constructor(self, message):
-        self.message = message
+
+
+    #def constructor(self, message):
+        #self.message = message
         # from the command argument derive the file name
-        self.audio_file = message.content.split(" ")[1] + ".mp3"
-        self.audio_file = "./Audio_files/" + self.audio_file
-        self.sound = None
-        self.channel = None
+        #self.audio_file = message.content.split(" ")[1] + ".mp3"
+        #self.audio_file = "./Audio_files/" + self.audio_file
+        #self.sound = None
+        #self.channel = None
+
     
     # def embed
-
-    async def connect(self):
+    async def connect(speaker, message):
         # Join voice channel that the message came from
-        channel = self.message.author.voice.channel
+        channel = speaker.voice.channel
         # get the sound object
-        self.sound = await channel.connect()
+        sound = await channel.connect()
+        await Sound.play(sound, message)
 
-    async def play(self):
+    async def play(sound, message):
         # Play the sound file
-        self.sound.play(discord.FFmpegPCMAudio(self.audio_file))
-        while self.sound.is_playing():
+        audio_file = message + ".mp3"
+        sound.play(discord.FFmpegPCMAudio(audio_file))
+        while sound.is_playing():
             # finish playing the sound
             await asyncio.sleep(1)
-        self.sound.stop()
+        sound.stop()
         # Disconnect from voice channel
-        await self.sound.disconnect()
+        await sound.disconnect()
     
 """
 class Security:

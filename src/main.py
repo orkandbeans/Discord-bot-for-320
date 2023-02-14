@@ -2,6 +2,8 @@ import discord
 from discord.ext import commands
 from dotenv import load_dotenv
 
+import SoundBoard
+
 import random
 import os
 
@@ -21,13 +23,16 @@ async def on_ready():
     except Exception as e:
         print(e)
 
-"""
------------------INSERT BOT COMMANDS HERE--------------------------
 
+#-----------------INSERT BOT COMMANDS HERE--------------------------
 
+@bot.command(name="soundboard", pass_context=True)
+async def sound_request(ctx, message):
+    speaker = ctx.author
+    await SoundBoard.Sound.connect(speaker, message)
+    
+#-------------------------------------------------------------------
 
--------------------------------------------------------------------
-"""
 
 #load the key
 load_dotenv()
