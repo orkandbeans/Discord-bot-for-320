@@ -25,13 +25,9 @@ async def on_ready():
 
 #-----------------INSERT BOT COMMANDS HERE--------------------------
 
-@bot.event
-async def on_message(message):
-    if message.author == bot.user:
-        return
-
-    if message.content.lower() == 'geoguessr':
-        await geoguessr_game(bot, message)
+@bot.command(name="geoguessr")
+async def geoguessr(ctx):
+    await geoguessr_game(bot, ctx)
 #-------------------------------------------------------------------
 
 
@@ -40,5 +36,4 @@ load_dotenv()
 #get the key from the environment
 KEY = os.getenv('BOT_TOKEN')
 #run the bot with the key
-
 bot.run(KEY)
