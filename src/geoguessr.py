@@ -2,11 +2,13 @@ import time
 import random
 import requests
 import discord
-import sys
+import os
 import io
 import asyncio
 
 from location_info import states
+
+max_rounds = 20
 
 class G_game:
 
@@ -17,17 +19,17 @@ class G_game:
     def load_states(self):
         location_list = []
         for state in states:
-            location_list.append(Location(state["name"],
-                                          state["min_latitude"],
-                                          state["max_latitude"],
-                                          state["min_longitude"],
-                                          state["max_longitude"])
-                                )
+            location_list.append(Location(state["name"], state["cities"]))
         return location_list
     
     async def start_game(self, num_rounds, bot, message):
         #load state information
         location_list = self.load_states()
+        
+        player = Player(message.author.name, 0, 0)
+        
+        await message.channel.send("Starting in...")
+        await count_down(message)
         
         while self.round_num < num_rounds:
             self.choose_location(location_list)
@@ -38,13 +40,11 @@ class G_game:
             
             player_guess = await self.get_player_guess(bot, message)
             
-            await self.check_player_guess(player_guess, message)
-
-            self.calc_distance(player_guess)
-            
-            self.display_results()
+            await self.check_player_guess(player_guess, message, player)
             
             self.round_num += 1
+            
+        await self.display_results(player, message)
         return
     
     def choose_location(self, location_list):
@@ -53,26 +53,25 @@ class G_game:
     
     def get_image(self):
         random.seed(time.time())
-        rand_latitude = random.uniform(self.cur_location.min_latitude, self.cur_location.max_latitude)
-        rand_longitude = random.uniform(self.cur_location.min_longitude, self.cur_location.max_longitude)
         
-        api_key = ""
-        location = (rand_latitude,rand_longitude)
-        size = "400x400"
+        rand_city = random.choice(self.cur_location.city_list)
+        
+        api_key = os.getenv('google_maps_api')
+        location = f"{rand_city},{self.cur_location.name}"
+        size = "800x800"
         fov = "120"  # in degrees
         heading = random.randint(0, 360)  # in degrees
         pitch = "10"  # in degrees
 
         url = f"https://maps.googleapis.com/maps/api/streetview?size={size}&location={location}&fov={fov}&heading={heading}&pitch={pitch}&key={api_key}"
-
         response = requests.get(url)
 
         if response.status_code == 200:
-            print("Image:", self.cur_location.name, "lat:", rand_latitude, "long:", rand_longitude)
+            print("state:", self.cur_location.name, "city:", rand_city)
             return response
         else:
             print("Failed to retrieve image. Response status code:", response.status_code)
-        return
+            return
     
     async def display_image(self, response, message):
         with io.BytesIO(response.content) as image:
@@ -88,57 +87,51 @@ class G_game:
         time_to_guess = 10
         start_time = time.time()
         
-        guess = ""
+        guess = "z"
         try:
-            guess = await asyncio.wait_for(bot.wait_for('message', check=check_user), timeout=30.0)
+            guess = await asyncio.wait_for(bot.wait_for('message', check=check_user), timeout=60.0)
             input_value = guess.content
             return input_value
         except asyncio.TimeoutError:
             await message.channel.send("Times up!")
             time.sleep(1)
-            return
+            return guess
     
     #check the players guess against 
-    async def check_player_guess(self, player_guess, message): 
+    async def check_player_guess(self, player_guess, message, player): 
         if player_guess.lower() == self.cur_location.name.lower():
             await message.channel.send("Correct!")
+            player.num_correct += 1
         else:
             await message.channel.send(f"Sorry that is incorrect, it was taken in {self.cur_location.name}")
         time.sleep(1)
+        player.rounds += 1
         return 
-        
-    def calc_distance(self, player_guess):
-        return
     
-    def display_results(self):
-        return
-    
-    def get_leaderboard(self):
+    async def display_results(self, player, message):
+        await message.channel.send(f'Great job {player.name}! You were correct on {player.num_correct} out of {player.rounds} rounds')
         return
     
 class Player:
-    def __init__(self, name, score, games_played):
+    def __init__(self, name, num_correct, rounds):
         self.name = name
-        self.score = score
-        self.games_played = games_played
+        self.num_correct = num_correct
+        self.rounds = rounds
 
 class Location:
-    def __init__(self, name, min_latitude, max_latitude, min_longitude, max_longitude):
+    def __init__(self, name, city_list):
         self.name = name
-        self.min_latitude = min_latitude
-        self.max_latitude = max_latitude
-        self.min_longitude = min_longitude
-        self.max_longitude = max_longitude
+        self.city_list = city_list
 
 async def introduce_user(message):
     await message.channel.send('Welcome to Geoguessr!')
     time.sleep(1)
     await message.channel.send('How it works:')
     time.sleep(0.5)
-    await message.channel.send('Each round you will be given a picture depicting a random location within the United States')
-    await message.channel.send('You will be given 60 seconds to view the image and guess which state the image was taken in')
-    await message.channel.send('After guessing, the answer will be revealed')
-    await message.channel.send('Send any message to acknowledge the rules')
+    await message.channel.send('Each round you will be given a picture depicting a random location within the United States.')
+    await message.channel.send('You will be given 60 seconds to view the image and guess which state the image was taken in.')
+    await message.channel.send('After guessing, the answer will be revealed.')
+    await message.channel.send('-Send any message to acknowledge the rules-')
     
 async def count_down(message):
     await message.channel.send('3...')
@@ -147,6 +140,7 @@ async def count_down(message):
     time.sleep(1)
     await message.channel.send('1.')
     time.sleep(1)
+    return
 
 async def geoguessr_game(bot, message):
     #make sure we are talking to user who issued "Geoguessr" command
@@ -168,6 +162,9 @@ async def geoguessr_game(bot, message):
     
         try:
             num_rounds = int(rounds.content)
+            if num_rounds == 0 or num_rounds > max_rounds:
+                await message.channel.send(f'Please pick between 1 and {max_rounds} rounds')
+                continue
             int_flag = False
         except ValueError:
             await message.channel.send(f'{rounds.content} is not a number')
