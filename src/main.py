@@ -6,6 +6,7 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import Ranking
 from openAI import openAI
+import SoundBoard
 import random
 import os
 from lorelookup import *
@@ -13,9 +14,6 @@ from osrsinfo import *
 
 
 #Create bot declaration with intents
-
-
-
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
 #Create BRIAN declaration for ranking
 Brian = Ranking.BRIAN()
@@ -25,11 +23,6 @@ AI = openAI()
 #when bot is logged in
 
 from jeopardy import *
-
-# Create bot declaration with intents
-bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
-
-
 
 
 @bot.event
@@ -149,10 +142,15 @@ async def jeopardy(ctx, arg):
         #if GameBoard.gameover is True: break
     await ctx.send("You earned " + str(money))
     await ctx.send("Thanks for playing!")
-# -------------------------------------------------------------------
 
+@bot.command(name="soundboard", pass_context=True)
+async def sound_request(ctx, message):
+    speaker = ctx.author
+    await SoundBoard.Sound.connect(speaker, message)
+    
+#-------------------------------------------------------------------
 
-# load the key
+#load the key
 load_dotenv()
 # get the key from the environment
 KEY = os.getenv('BOT_TOKEN')
