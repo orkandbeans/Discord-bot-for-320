@@ -31,7 +31,7 @@ async def on_ready():
 
     #get the guild with all users in our specific discord and run an update on the members of the database
     memberList = bot.get_guild(1065019755628613682).members
-    Brian.botCommand("updateMembers",memberList,"")
+    Brian.updateMembers(memberList)
 
     #try to sync all commands that aren't actively in the tree or have been altered
     try:
@@ -148,7 +148,7 @@ async def sound_request(ctx, message):
     speaker = ctx.author
     await SoundBoard.Sound.connect(speaker, message)
 
-@bot.command(name=“geoguessr”)
+@bot.command(name="geoguessr")
 async def geoguessr(ctx):
     await geoguessr_game(bot,ctx)
     

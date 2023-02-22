@@ -27,24 +27,17 @@ class BRIAN():
         database.commit()
         
 
-
-    def botCommand(self,comType,name,message):
-        #take a bot command and determine what needs to be changed. comType will tell the method what to do.
-        
-        if comType == "updateMembers":#This will update the database with each member in the discord guild, adding them if they don't exist ignoring if they do
-            for member in name:
-                if self.memberController.addMember(member) != 0:
-                    print("ERROR: Failed to add %s to the database.",member)
-
-        return
+    def updateMembers(self,memberList):
+        #add each member of the discord to the database and update their roles.
+        for member in memberList:
+            self.memberController.addMember(member)
+                
 
     def updateScore(self,name,message):
         #change the member "name"'s score based on what they said in their message
         if self.scoreCalculator.changeScore(name,self.scoreCalculator.calculateStr(message)) != 0:
             print("ERROR: Failed to change %s's score.",name)
         
-
-
     def adjustRole(self,name,addRole,role):
         #change the member "name" to either add or delete "role" based on addRole
         pass
@@ -76,8 +69,13 @@ class MemberController():
         return self.memberModule.removeMember(name)
     
     def addMember(self,name):
-        #add a member to the db with member_name = "name". return 0 on success and 1 on failure
-        return self.memberModule.addMember(name)
+        #add a member to the db with member_name = "name".
+        result = self.memberModule.addMember(name)
+        if result == 0:
+            print("Added " + str(name) + " to the database.")
+        #reset the member's roles to init them in the role system
+        self.roleModule.resetRoles(name)
+        
         
     def newRole(self,role,scoreToGet):
         #adds a new role to the database as well as the score needed to get the role.
@@ -220,7 +218,13 @@ class ScoreModule():
 
 def main():
   
-    """command = "INSERT OR IGNORE INTO roles VALUES (1,'pleb',20)"
+    #database.execute("DROP TABLE roles")
+
+    
+
+    
+    brian = BRIAN()
+    """command = "INSERT OR IGNORE INTO roles VALUES (1,'pleb',0)"
     database.execute(str(command))
     database.commit()
     command = "INSERT OR IGNORE INTO roles VALUES (2,'teamMember',30)"
@@ -229,10 +233,6 @@ def main():
     command = "INSERT OR IGNORE INTO roles VALUES (3,'admin',50)"
     database.execute(str(command))
     database.commit()"""
-
-    #database.execute("DROP TABLE rolloc")
-    #brian = BRIAN()
-
     #database.execute("INSERT INTO rolloc VALUES(5,3)")
     #database.commit()
 
