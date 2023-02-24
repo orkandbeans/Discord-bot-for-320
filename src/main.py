@@ -86,6 +86,10 @@ async def on_member_ban(guild, member):
 async def on_member_join(member):
     Brian.addRemoveMember(member,True)
 
+@bot.command(name="newRole")
+async def newRole(ctx,arg):
+    Brian.addRemoveRole(arg[0],arg[1],True)
+
 @bot.command(name="jeopardy", pass_context=True)
 async def jeopardy(ctx, arg):
     money = 0
