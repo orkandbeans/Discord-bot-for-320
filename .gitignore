@@ -5,3 +5,5 @@
 ./venv/*
 ./venv
 *.env
+*.json
+src/__pycache__/jeopardy.cpython-39.pyc
