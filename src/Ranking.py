@@ -54,18 +54,20 @@ class BRIAN():
             print("ERROR: Failed to remove %s from the database.",name)
         return
     
-    def addRemoveRole(self,role,score,addRole):
+    def addRemoveRole(self,role,score=0,addRole=True):
         #add or remove a role from the database based on the variable, "addRole"
-
+        
         if addRole:
 
             if self.memberController.newRole(role,score) != 0:
                 print("ERROR: Failed to add %s role to the database.",role)
-            return
+                return 1
+            return 0
         
         if self.memberController.deleteRole(role) != 0:
             print("ERROR: Failed to remove %s role from the database.",role)
-        return
+            return 1
+        return 0
 
 
 class MemberController():
@@ -101,11 +103,12 @@ class MemberController():
             if scoreToGet == -1:
                 return 1
 
-        self.roleModule.newRole(role,scoreToGet)
-        return 0
+        return self.roleModule.newRole(role,scoreToGet)
+        
     
     def deleteRole(self,role):
-        return 0
+        #calls the rolemodule to delete a role from the database.
+        return self.roleModule.deleteRole(role)
 
     def addMemberRole(self,name,role):
         #add a specific role to the member. return 0 on success and 1 on failure
@@ -141,9 +144,14 @@ class RoleModule():
         #add a new role into the database.
         command = "INSERT OR IGNORE INTO roles VALUES((SELECT max(role_id) FROM roles)+1,?1,?2)"
         database.execute(str(command),str(role),scoreToGet)
-        if self.safeCommit():
-            print("ERROR: Didn't add %s role to the database.",role)
-    
+        return self.safeCommit()
+            
+    def deleteRole(self,role):
+        #delete a role from the database
+        command = "DELETE FROM roles WHERE role_name = ?"
+        database.execute(str(command),str(role))
+        return self.safeCommit()
+
     def adjustSpecificRole(self,name,role,addRole):
         #if addRole is true, add a specific node to a member, else, remove a specific role from a member. 
         return 0
@@ -158,8 +166,8 @@ class RoleModule():
         for role in shouldHave:#for each role that the member should have, try to insert that role into the database
             command = "INSERT OR IGNORE INTO rolloc VALUES ((SELECT member_id FROM members WHERE member_name=?),?)"
             database.execute(str(command),str(name),role[0])
-            if self.safeCommit():
-                print("didn't add this role %d",role[0])
+            return self.safeCommit()
+
 
 
     def getRoles(self,name):
@@ -238,8 +246,6 @@ class ScoreModule():
         database.commit()
         
 
-
-
 def main():
   
     #database.execute("DROP TABLE roles")
@@ -251,8 +257,8 @@ def main():
     #database.execute("DROP TABLE members")
     #database.execute("INSERT INTO rolloc VALUES (5,2)")
     #database.commit()
-    brian = BRIAN()
-    brian.addRemoveRole("generalKenobi",100,True)
+    #brian = BRIAN()
+    #brian.addRemoveRole("str(args[0])",200,True)
     """
     command = "INSERT OR IGNORE INTO roles VALUES (1,'pleb',0)"
     database.execute(str(command))
@@ -263,6 +269,7 @@ def main():
     command = "INSERT OR IGNORE INTO roles VALUES (3,'admin',50)"
     database.execute(str(command))
     database.commit()"""
+
     #database.execute("INSERT INTO rolloc VALUES(5,3)")
     #database.commit()
 

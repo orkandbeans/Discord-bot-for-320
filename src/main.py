@@ -40,7 +40,7 @@ async def on_ready():
     # else print exception
     except Exception as e:
         print(e)
-
+    
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
 @bot.tree.command(name="osrsinfo")
@@ -86,9 +86,21 @@ async def on_member_ban(guild, member):
 async def on_member_join(member):
     Brian.addRemoveMember(member,True)
 
-@bot.command(name="newRole")
-async def newRole(ctx,arg):
-    Brian.addRemoveRole(arg[0],arg[1],True)
+@bot.tree.command(name="newrole")
+async def newrole(ctx: discord.Interaction,arg1: str,arg2: int):
+    result = Brian.addRemoveRole(arg1,arg2,True)
+    if result==1:
+        await ctx.response.send_message(f"ERROR: {arg1} was not added to the database.")
+    else:
+        await ctx.response.send_message(f"{arg1} has been added to the database.")
+
+@bot.tree.command(name="deleterole")
+async def deleterole(ctx: discord.Interaction,arg1: str):
+    result = Brian.addRemoveRole(arg1,addRole=False)
+    if result==1:
+        await ctx.response.send_message(f"ERROR: {arg1} was not removed from the database.")
+    else:
+        await ctx.response.send_message(f"{arg1} has been removed from the database.")
 
 @bot.command(name="jeopardy", pass_context=True)
 async def jeopardy(ctx, arg):
@@ -154,7 +166,8 @@ async def sound_request(ctx, message):
 
 @bot.command(name="geoguessr")
 async def geoguessr(ctx):
-    await geoguessr_game(bot,ctx)
+    pass
+    #await geoguessr_game(bot,ctx)
     
 #-------------------------------------------------------------------
 
