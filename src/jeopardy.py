@@ -3,6 +3,33 @@ import json
 import random
 import asyncio
 class GameStart:
+    def gameexist(ctx): #checks to see if game exists in file
+        user_id = ctx.author.id
+        guild_id = int(ctx.guild.id)
+        channel_id = int(ctx.channel.id)
+        with open("games.json","r") as file:
+            data = json.load(file)
+ #           for i in range(len(data)):
+ #               print(data(i)["user_id"])
+ #               if user_id == data(i)["user_id"]:
+ #                   return False
+            for item in data:
+                print(item[user_id])
+         #       if user_id == data[item]["user_id"]:# or channel_id == int(item["channel_id"]) or guild_id == int(item["guild_id"]):
+         #           return False
+        return False
+        return True
+    def gamemake(ctx):
+        user_id = str(ctx.author.id)
+        guild_id = int(ctx.guild.id)
+        channel_id = int(ctx.channel.id)
+        data = {
+            "user_id": user_id,
+            "guild_id": guild_id,
+            "channel_id": channel_id
+        }
+        with open("games.json","a") as file:
+            json.dump(data,file)
     def startgame(command, numberofcategories):#, username, channel):
 
         command = command.lower()
@@ -76,12 +103,16 @@ class GameStart:
 class Input:
     async def playgame(ctx, arg, bot):
         money = 0
-
         def check(m):  # only allow the author to answer
             return m.author == ctx.author
 
         handle = Input.myhandle(arg)  # user assumed to input "custom" to start a game
         if handle == 'custom':
+           # doesGameExist = GameStart.gameexist(ctx)
+           # if (doesGameExist):
+            #    await ctx.send("Error, user already playing")
+            #    return
+            GameStart.gamemake(ctx)
             intro = await ctx.send("How many categories would you like to play with? Pick between 1 and 5.")
             usermsg = await bot.wait_for('message', check=check)  # wait for author to type in answer
             await usermsg.delete()
