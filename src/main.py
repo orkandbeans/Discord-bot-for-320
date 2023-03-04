@@ -102,6 +102,17 @@ async def deleterole(ctx: discord.Interaction,arg1: str):
     else:
         await ctx.response.send_message(f"{arg1} has been removed from the database.")
 
+@bot.tree.command(name="getroles")
+async def getroles(ctx: discord.Interaction,arg1: str):
+    result = Brian.getMRoles(arg1)
+    if result == []:
+        await ctx.response.send_message(f"{arg1} does not have any roles in the database.")
+    else:
+        sendMessage = f"{arg1} roles:\n"
+        for role in result:
+            sendMessage = sendMessage + f"{role}\n"
+        await ctx.response.send_message(sendMessage)
+
 @bot.command(name="jeopardy", pass_context=True)
 async def jeopardy(ctx, arg):
     money = 0
