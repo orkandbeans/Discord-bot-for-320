@@ -153,7 +153,7 @@ async def jeopardy(ctx, arg):
 async def sound_request(ctx, message):
     speaker = ctx.author
     await SoundBoard.Sound.connect(speaker, message)
-    
+
 #-------------------------------------------------------------------
 
 #load the key
