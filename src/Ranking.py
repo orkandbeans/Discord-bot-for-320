@@ -31,11 +31,7 @@ class BRIAN():
     def initRoles(self,roleList):
         #add each role into the database for use.
         for role in roleList:
-            if self.memberController.newRole(role) == 1:
-                print("ERROR: Failed to add role %s",role)
-            
-
-        
+            self.memberController.newRole(role)
 
     def updateMembers(self,memberList):
         #add each member of the discord to the database and update their roles.
@@ -174,8 +170,15 @@ class RoleModule():
             
     def deleteRole(self,role):
         #delete a role from the database
+        command = "SELECT role_id FROM roles WHERE role_name = ?"
+        roleId = database.record(str(command), str(role))
+        
+        command = "DELETE FROM rolloc WHERE Rrole_id = ?"
+        database.execute(str(command),int(roleId[0]))
+
         command = "DELETE FROM roles WHERE role_name = ?"
         database.execute(str(command),str(role))
+    
         return self.safeCommit()
 
     def adjustSpecificRole(self,name,role,addRole):

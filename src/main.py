@@ -10,7 +10,7 @@ import SoundBoard
 import random
 import os
 from lorelookup import *
-from osrsinfo import *
+#from osrsinfo import *
 
 
 #Create bot declaration with intents
@@ -95,6 +95,7 @@ async def newrole(ctx: discord.Interaction,arg1: str,arg2: int):
     if result==1:
         await ctx.response.send_message(f"ERROR: {arg1} was not added to the database.")
     else:
+        Brian.updateMembers(ctx.guild.members)
         await ctx.response.send_message(f"{arg1} has been added to the database.")
 
 @bot.tree.command(name="deleterole")
