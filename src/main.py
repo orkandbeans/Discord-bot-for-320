@@ -30,7 +30,10 @@ async def on_ready():
     print("Bot is Up and Ready")
 
     #get the guild with all users in our specific discord and run an update on the members of the database
-    memberList = bot.get_guild(1065019755628613682).members
+    server = discord.utils.get(bot.guilds)
+    memberList = bot.get_guild(server.id).members
+    roleList = bot.get_guild(server.id).roles
+    Brian.initRoles(roleList)
     Brian.updateMembers(memberList)
 
     #try to sync all commands that aren't actively in the tree or have been altered

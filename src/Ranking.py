@@ -28,6 +28,14 @@ class BRIAN():
         database.execute(createCommand)
         database.commit()
         
+    def initRoles(self,roleList):
+        #add each role into the database for use.
+        for role in roleList:
+            if self.memberController.newRole(role) == 1:
+                print("ERROR: Failed to add role %s",role)
+            
+
+        
 
     def updateMembers(self,memberList):
         #add each member of the discord to the database and update their roles.
@@ -56,10 +64,9 @@ class BRIAN():
         return
     
     def addRemoveRole(self,role,score=0,addRole=True):
-        #add or remove a role from the database based on the variable, "addRole"
+        #add or remove a role from the database
         
         if addRole:
-
             if self.memberController.newRole(role,score) != 0:
                 print("ERROR: Failed to add %s role to the database.",role)
                 return 1
@@ -69,6 +76,21 @@ class BRIAN():
             print("ERROR: Failed to remove %s role from the database.",role)
             return 1
         return 0
+    
+    def addRemoveMemberRole(self,role,name,addRole=True):
+        #add or remove a role from a member
+
+        if addRole:
+            if self.memberController.addMemberRole(role,name) != 0:
+                print("ERROR: Failed to give %s the role %s",name,role)
+                return 1
+            return 0
+        
+        if self.memberController.removeMemberRole(role,name) != 0:
+            print("ERROR: Failed to remove the role %s from %s",role,name)
+            return 1
+        return 0
+        
 
 
 class MemberController():
@@ -102,7 +124,7 @@ class MemberController():
         self.roleModule.resetRoles(name)
         
         
-    def newRole(self,role,scoreToGet):
+    def newRole(self,role,scoreToGet=-1):
         #adds a new role to the database as well as the score needed to get the role.
         if scoreToGet == -1:
             scoreToGet = self.roleModule.getNewRoleScore()
@@ -118,10 +140,12 @@ class MemberController():
 
     def addMemberRole(self,name,role):
         #add a specific role to the member. return 0 on success and 1 on failure
+        self.roleModule.adjustSpecificRole(name,role,True)
         return 0
 
     def removeMemberRole(self,name,role):
         #remove a specific role from the member. return 0 on success and 1 on failure
+        self.roleModule.adjustSpecificRole(name,role,False)
         return 0
 
     def resetRoles(self,name):
@@ -135,11 +159,11 @@ class RoleModule():
         self.roles = {""}
 
     def getNewRoleScore(self):
-        command = "SELECT max(roleCost) FROM roles"
+        command = "SELECT max(role_cost) FROM roles"
         result = database.record(command)
 
-        if result:
-            return result + 20
+        if result[0] is not None:
+            return result[0] + 20
         return 0
 
     def newRole(self,role,scoreToGet):
@@ -206,7 +230,7 @@ class MemberModule():
         id = database.record(str(command),str(name))
         
         assert id is not None
-        
+
         command = "DELETE FROM members WHERE member_name = ?"
         database.execute(str(command),str(name))
 
@@ -260,7 +284,7 @@ class ScoreModule():
 
 def main():
   
-    #database.execute("DROP TABLE roles")
+    #database.execute("DROP TABLE members")
 
     #b = BRIAN()
 
