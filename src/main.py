@@ -10,7 +10,7 @@ import SoundBoard
 import random
 import os
 from lorelookup import *
-#from osrsinfo import *
+from osrsinfo import *
 
 
 #Create bot declaration with intents

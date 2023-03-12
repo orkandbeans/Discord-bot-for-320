@@ -53,11 +53,13 @@ class BRIAN():
         if addMember:
             if self.memberController.addMember(name) != 0:
                 print("ERROR: Failed to add %s to the database.",name)
-            return
+                return 1
+            return 0
 
         if self.memberController.removeMember(name) != 0:
             print("ERROR: Failed to remove %s from the database.",name)
-        return
+            return 1
+        return 0
     
     def addRemoveRole(self,role,score=0,addRole=True):
         #add or remove a role from the database
@@ -75,6 +77,10 @@ class BRIAN():
     
     def addRemoveMemberRole(self,role,name,addRole=True):
         #add or remove a role from a member
+
+        assert isinstance(role,str), 'Argument is not a string.'
+        assert isinstance(name,str), 'Argument is not a string.'
+
 
         if addRole:
             if self.memberController.addMemberRole(role,name) != 0:
@@ -112,12 +118,12 @@ class MemberController():
         result = self.memberModule.addMember(name)
         if result == 0:
             print("Added " + str(name) + " to the database.")
+        else:
+            return 1
 
-        result = self.roleModule.resetRoles(name)
-        if result == 0:
-            print("Added " + str(name) + "'s roles to the database.")
         #reset the member's roles to init them in the role system
         self.roleModule.resetRoles(name)
+        return 0
         
         
     def newRole(self,role,scoreToGet=-1):
@@ -197,7 +203,7 @@ class RoleModule():
         for role in shouldHave:#for each role that the member should have, try to insert that role into the database
             command = "INSERT OR IGNORE INTO rolloc VALUES (?,?)"
             database.execute(str(command),int(id[0]),int(role))
-        return self.safeCommit()
+        database.commit()
 
     def getRoles(self,name,allStats=False):
         #get all roles that member "name" is authorized to have. return list of roles as tuples
@@ -234,18 +240,21 @@ class MemberModule():
         
         assert id is not None
 
+        command = "DELETE FROM rolloc WHERE Rmember_id = ?"
+        database.execute(str(command),id[0])
+
         command = "DELETE FROM members WHERE member_name = ?"
         database.execute(str(command),str(name))
-
-        command = "DELETE FROM rolloc WHERE Rmember_id = ?"
-        database.execute(str(command),int(id))
 
         return self.safeCommit()
 
     def getMember(self,name):#get the member with member_name = "name"
         command = "SELECT * FROM members WHERE member_name = ?"
-        database.execute(str(command),str(name))
-        return self.safeCommit()
+        result = database.record(str(command),str(name))
+        
+        assert result is not None
+
+        return result
 
     def safeCommit(self):#runs the commit command while checking if the table was altered at all. return 0 if database was saved, 1 if not
         if database.rowCount() == 1:
@@ -290,8 +299,6 @@ def main():
     #database.execute("DROP TABLE members")
 
     #b = BRIAN()
-
-    #print(b.getMRoles('orkandbeans#3110'))
 
     """
     command = "INSERT OR IGNORE INTO roles VALUES (1,'pleb',0)"
