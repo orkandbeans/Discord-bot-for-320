@@ -90,29 +90,45 @@ async def on_member_join(member):
     Brian.addRemoveMember(member,True)
 
 @bot.tree.command(name="newrole")
-async def newrole(ctx: discord.Interaction,arg1: str,arg2: int):
-    result = Brian.addRemoveRole(arg1,arg2,True)
+async def newrole(ctx: discord.Interaction,role: str,score: int):
+    result = Brian.addRemoveRole(role,score,True)
     if result==1:
-        await ctx.response.send_message(f"ERROR: {arg1} was not added to the database.")
+        await ctx.response.send_message(f"ERROR: {role} was not added to the database.")
     else:
         Brian.updateMembers(ctx.guild.members)
-        await ctx.response.send_message(f"{arg1} has been added to the database.")
+        await ctx.response.send_message(f"{role} has been added to the database.")
 
 @bot.tree.command(name="deleterole")
-async def deleterole(ctx: discord.Interaction,arg1: str):
-    result = Brian.addRemoveRole(arg1,addRole=False)
+async def deleterole(ctx: discord.Interaction,role: str):
+    result = Brian.addRemoveRole(role,addRole=False)
     if result==1:
-        await ctx.response.send_message(f"ERROR: {arg1} was not removed from the database.")
+        await ctx.response.send_message(f"ERROR: {role} was not removed from the database.")
     else:
-        await ctx.response.send_message(f"{arg1} has been removed from the database.")
+        await ctx.response.send_message(f"{role} has been removed from the database.")
+
+@bot.tree.command(name="addrole")
+async def addRemoveRole(ctx: discord.Interaction,role: str, member: str):
+    result = Brian.addRemoveMemberRole(role,member)
+    if result==1:
+        await ctx.response.send_message(f"ERROR: {role} was not added to {member}.")
+    else:
+        await ctx.response.send_message(f"{role} has been added to {member}.")
+
+@bot.tree.command(name="removerole")
+async def removerole(ctx: discord.Interaction,role: str, member: str):
+    result = Brian.addRemoveMemberRole(role,member,False)
+    if result==1:
+        await ctx.response.send_message(f"ERROR: {role} was not removed from {member}.")
+    else:
+        await ctx.response.send_message(f"{role} has been removed from {member}.")
 
 @bot.tree.command(name="getroles")
-async def getroles(ctx: discord.Interaction,arg1: str):
-    result = Brian.getMRoles(arg1)
+async def getroles(ctx: discord.Interaction,member: str):
+    result = Brian.getMRoles(member)
     if result == []:
-        await ctx.response.send_message(f"{arg1} does not have any roles in the database.")
+        await ctx.response.send_message(f"{member} does not have any roles in the database.")
     else:
-        sendMessage = f"{arg1} roles:\n"
+        sendMessage = f"{member} roles:\n"
         for role in result:
             sendMessage = sendMessage + f"{role}\n"
         await ctx.response.send_message(sendMessage)

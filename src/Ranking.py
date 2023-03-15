@@ -41,7 +41,7 @@ class BRIAN():
     def updateScore(self,name,message):
         #change the member "name"'s score based on what they said in their message
         if self.scoreCalculator.changeScore(name,self.scoreCalculator.calculateStr(message)) != 0:
-            print("ERROR: Failed to change %s's score.",name)
+            print(f"ERROR: Failed to change {name}'s score.")
 
     def getMRoles(self,name):
         #get all roles that a member has and return a list of role names.
@@ -52,12 +52,12 @@ class BRIAN():
 
         if addMember:
             if self.memberController.addMember(name) != 0:
-                print("ERROR: Failed to add %s to the database.",name)
+                print(f"ERROR: Failed to add {name} to the database.")
                 return 1
             return 0
 
         if self.memberController.removeMember(name) != 0:
-            print("ERROR: Failed to remove %s from the database.",name)
+            print(f"ERROR: Failed to remove {name} from the database.")
             return 1
         return 0
     
@@ -66,12 +66,12 @@ class BRIAN():
         
         if addRole:
             if self.memberController.newRole(role,score) != 0:
-                print("ERROR: Failed to add %s role to the database.",role)
+                print(f"ERROR: Failed to add {role} role to the database.")
                 return 1
             return 0
         
         if self.memberController.deleteRole(role) != 0:
-            print("ERROR: Failed to remove %s role from the database.",role)
+            print(f"ERROR: Failed to remove {role} role from the database.")
             return 1
         return 0
     
@@ -81,17 +81,21 @@ class BRIAN():
         assert isinstance(role,str), 'Argument is not a string.'
         assert isinstance(name,str), 'Argument is not a string.'
 
+        if self.memberController.isMember(name):
+            if addRole:
+                if self.memberController.addMemberRole(name,role) != 0:
+                    print(f"ERROR: Failed to give {name} the role {role}.")
+                    return 1
+                return 0
+                
 
-        if addRole:
-            if self.memberController.addMemberRole(role,name) != 0:
-                print("ERROR: Failed to give %s the role %s",name,role)
+            if self.memberController.removeMemberRole(name,role) != 0:
+                print(f"ERROR: Failed to remove the role {role} from {name}.")
                 return 1
             return 0
-        
-        if self.memberController.removeMemberRole(role,name) != 0:
-            print("ERROR: Failed to remove the role %s from %s",role,name)
-            return 1
-        return 0
+
+        print(f"ERROR: {name} was not found in the database.")
+        return 1
         
 
 
@@ -125,6 +129,10 @@ class MemberController():
         self.roleModule.resetRoles(name)
         return 0
         
+    def isMember(self,name):
+        #check if name is a member in the database
+        result = self.memberModule.getMember(name)
+        return 1 if result is not None else 0
         
     def newRole(self,role,scoreToGet=-1):
         #adds a new role to the database as well as the score needed to get the role.
@@ -142,13 +150,13 @@ class MemberController():
 
     def addMemberRole(self,name,role):
         #add a specific role to the member. return 0 on success and 1 on failure
-        self.roleModule.adjustSpecificRole(name,role,True)
-        return 0
+        result = self.roleModule.adjustSpecificRole(name,role,True)
+        return result
 
     def removeMemberRole(self,name,role):
         #remove a specific role from the member. return 0 on success and 1 on failure
-        self.roleModule.adjustSpecificRole(name,role,False)
-        return 0
+        result = self.roleModule.adjustSpecificRole(name,role,False)
+        return result
 
     def resetRoles(self,name):
         #reset the roles of the member back to default (given their rankingscore)
@@ -189,7 +197,22 @@ class RoleModule():
 
     def adjustSpecificRole(self,name,role,addRole):
         #if addRole is true, add a specific role to a member, else, remove a specific role from a member. 
-        return 0
+
+        command = "SELECT member_id FROM members WHERE member_name=?"
+        memId = database.record(str(command),str(name))
+        command = "SELECT role_id FROM roles WHERE role_name=?"
+        rolId = database.record(str(command),str(role))
+        
+        memId = memId[0]
+        rolId = rolId[0]
+
+        assert memId is not None
+        assert rolId is not None
+        
+        command = "INSERT INTO rolloc VALUES (?,?)" if addRole else "DELETE FROM rolloc WHERE Rmember_id=? AND Rrole_id=?"
+        database.execute(str(command),str(memId),str(rolId))
+
+        return self.safeCommit()
 
     def resetRoles(self,name):
         #reset the roles of the member back to default (given their rankingscore) ((((do not remove member added roles))))
@@ -297,8 +320,10 @@ class ScoreModule():
 def main():
   
     #database.execute("DROP TABLE members")
-
+    #database.execute("DROP TABLE roles")
+    #database.execute("DROP TABLE rolloc")
     #b = BRIAN()
+
 
     """
     command = "INSERT OR IGNORE INTO roles VALUES (1,'pleb',0)"
