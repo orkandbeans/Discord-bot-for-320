@@ -10,7 +10,7 @@ import SoundBoard
 import random
 import os
 from lorelookup import *
-from osrsinfo import *
+#from osrsinfo import *
 
 
 #Create bot declaration with intents
@@ -125,6 +125,7 @@ async def removerole(ctx: discord.Interaction,role: str, member: str):
 @bot.tree.command(name="getroles")
 async def getroles(ctx: discord.Interaction,member: str):
     result = Brian.getMRoles(member)
+    
     if result == []:
         await ctx.response.send_message(f"{member} does not have any roles in the database.")
     else:

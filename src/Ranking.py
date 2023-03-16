@@ -1,6 +1,6 @@
 from db import db as database
 import nltk
-from nltk.sentiment import SentimentIntensityAnalyzer
+from nltk.sentiment import SentimentIntensityAnalyzer as SIA
 
 
 
@@ -11,7 +11,7 @@ class BRIAN():
         self.memberController = MemberController()
 
         #when a BRIAN is created, make sure there is a database to access. 
-        createCommand = "CREATE TABLE IF NOT EXISTS members(member_id INTEGER PRIMARY KEY, member_name TEXT UNIQUE, ranking_score INTEGER, sentiment REAL, sentiment_divisor INTEGER)"
+        createCommand = "CREATE TABLE IF NOT EXISTS members(member_id INTEGER PRIMARY KEY, member_name TEXT UNIQUE, number_messages INTEGER, ranking_score INTEGER, negative REAL, neutral REAL, Positive REAL)"
         database.execute(createCommand)
         database.commit()
 
@@ -40,7 +40,7 @@ class BRIAN():
                 
     def updateScore(self,name,message):
         #change the member "name"'s score based on what they said in their message
-        if self.scoreCalculator.changeScore(name,self.scoreCalculator.calculateStr(message)) != 0:
+        if self.scoreCalculator.changeScore(name,message) != 0:
             print(f"ERROR: Failed to change {name}'s score.")
 
     def getMRoles(self,name):
@@ -253,7 +253,7 @@ class RoleModule():
 class MemberModule():
 
     def addMember(self, name):#insert a member into the members table with member_name = "name", if exists ignore this command
-        command = "INSERT OR IGNORE INTO members VALUES ((SELECT max(member_id) FROM members)+1,?,0,0,0)"
+        command = "INSERT OR IGNORE INTO members VALUES ((SELECT max(member_id) FROM members)+1,?,0,0,0,0)"
         database.execute(str(command),str(name))
         return self.safeCommit()
 
@@ -291,31 +291,32 @@ class ScoreCalculator():
 
     def __init__(self):#store the word dictionary in self.wordDict in order to rank the attribute scores of each member's messages
         self.scoreModule = ScoreModule()
-        self.wordDict = {"please":(0,5),"hate":(1,5),"LOL":(2,5)}#the format is "word of interest":(attributeID,attributeIncrement)
+
+        nltk.download('vader_lexicon')
+        self.analizer = SIA()
     
-    def changeScore(self,name,attributeList):#increment the member's score by the chat increment amount and increment each attribute score by the values in "attributeList"
+    def changeScore(self,name,message):#increment the member's score by the chat increment amount and increment each attribute score by the values in "attributeList"
+        attributeList = self.calculateStr(message)
         self.scoreModule.adjustScore(name,attributeList)
+        self.scoreModule.updateRankingScore(name,attributeList)
         return 0
 
     def calculateStr(self,message):#calculate the score of a specific string that a member sent
-        attributeList = [0,0,0] #this is a list that tracks how nice, mean, and funny someone is. [nice, mean, funny] 
+        result = self.analizer.polarity_scores(message)
+        attributes = [result['neg'],result['neu'],result['pos']]
 
-
-    ##############################################################change this for sentiment ###############################################
-        for word in message.split():#for each word in the members chat message, check if it matches a key in the wordDict and adjust score accordingly
-            if word in self.wordDict:
-                attributeList[self.wordDict[word][0]] += self.wordDict[word][1]
-
-        return attributeList
-
+        return attributes
+    
 
 class ScoreModule():
     ##############################################################change this for sentiment##################################################
     def adjustScore(self,name,aL):#adjust the ranking score of "name" by 1 and each attribute by the amount described by the list "aL"
-        command = "UPDATE members SET ranking_score=ranking_score + 1, happy=happy + ?2, angry=angry + ?3, funny=funny + ?4 WHERE member_name=?1"
+        command = "UPDATE members SET number_messages=number_messages + 1, ranking_score=ranking_score, negative=negative + ?2, neutral=neutral + ?3, positive=positive + ?4 WHERE member_name=?1"
         database.execute(str(command),str(name),aL[0],aL[1],aL[2])
         database.commit()
-        
+    
+    def updateRankingScore(self,aL,):
+        pass
 
 def main():
   
@@ -323,6 +324,8 @@ def main():
     #database.execute("DROP TABLE roles")
     #database.execute("DROP TABLE rolloc")
     #b = BRIAN()
+    sc = ScoreCalculator()
+    print(sc.calculateStr("hello, i hate you very much and like you a little"))
 
 
     """
