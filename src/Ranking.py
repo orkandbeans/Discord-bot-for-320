@@ -309,14 +309,23 @@ class ScoreCalculator():
     
 
 class ScoreModule():
-    ##############################################################change this for sentiment##################################################
     def adjustScore(self,name,aL):#adjust the ranking score of "name" by 1 and each attribute by the amount described by the list "aL"
         command = "UPDATE members SET number_messages=number_messages + 1, ranking_score=ranking_score, negative=negative + ?2, neutral=neutral + ?3, positive=positive + ?4 WHERE member_name=?1"
         database.execute(str(command),str(name),aL[0],aL[1],aL[2])
         database.commit()
     
-    def updateRankingScore(self,aL,):
-        pass
+    def updateRankingScore(self,name,aL):
+        
+        negScore = aL[0] / 3
+        neuScore = aL[1]
+        posScore = aL[2] * 3
+        
+        rankingScore = negScore + neuScore + posScore
+
+        command = "UPDATE members SET number_messages=number_messages + 1, ranking_score=ranking_score + ?2, negative=negative, neutral=neutral, positive=positive WHERE member_name=?1"
+        database.execute(str(command),str(name),rankingScore)
+        database.commit()
+        
 
 def main():
   
