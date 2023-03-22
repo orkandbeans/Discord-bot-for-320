@@ -83,15 +83,15 @@ async def on_message(message):
 
 @bot.event
 async def on_member_ban(guild, member):
-    Brian.addRemoveMember(member,False)
+    Brian.removeMember(member)
 
 @bot.event
 async def on_member_join(member):
-    Brian.addRemoveMember(member,True)
+    Brian.newMember(member)
 
 @bot.tree.command(name="newrole")
 async def newrole(ctx: discord.Interaction,role: str,score: int):
-    result = Brian.addRemoveRole(role,score,True)
+    result = Brian.newRole(role,score)
     if result==1:
         await ctx.response.send_message(f"ERROR: {role} was not added to the database.")
     else:
@@ -100,15 +100,15 @@ async def newrole(ctx: discord.Interaction,role: str,score: int):
 
 @bot.tree.command(name="deleterole")
 async def deleterole(ctx: discord.Interaction,role: str):
-    result = Brian.addRemoveRole(role,addRole=False)
+    result = Brian.deleteRole(role)
     if result==1:
         await ctx.response.send_message(f"ERROR: {role} was not removed from the database.")
     else:
         await ctx.response.send_message(f"{role} has been removed from the database.")
 
 @bot.tree.command(name="addrole")
-async def addRemoveRole(ctx: discord.Interaction,role: str, member: str):
-    result = Brian.addRemoveMemberRole(role,member)
+async def addrole(ctx: discord.Interaction,role: str, member: str):
+    result = Brian.addMemberRole(role,member)
     if result==1:
         await ctx.response.send_message(f"ERROR: {role} was not added to {member}.")
     else:
@@ -116,7 +116,7 @@ async def addRemoveRole(ctx: discord.Interaction,role: str, member: str):
 
 @bot.tree.command(name="removerole")
 async def removerole(ctx: discord.Interaction,role: str, member: str):
-    result = Brian.addRemoveMemberRole(role,member,False)
+    result = Brian.removeMemberRole(role,member)
     if result==1:
         await ctx.response.send_message(f"ERROR: {role} was not removed from {member}.")
     else:

@@ -36,7 +36,7 @@ class BRIAN():
     def updateMembers(self,memberList):
         #add each member of the discord to the database and update their roles.
         for member in memberList:
-            self.memberController.addMember(member)
+            self.newMember(member)
                 
     def updateScore(self,name,message):
         #change the member "name"'s score based on what they said in their message
@@ -46,49 +46,55 @@ class BRIAN():
     def getMRoles(self,name):
         #get all roles that a member has and return a list of role names.
         return self.memberController.roleFind(name)
-
-    def addRemoveMember(self,name,addMember):
-        #remove or add a member from the database based on the variable, "addMember"
-
-        if addMember:
-            if self.memberController.addMember(name) != 0:
-                print(f"ERROR: Failed to add {name} to the database.")
-                return 1
-            return 0
-
+    
+    def newMember(self,name):
+        #add a member to the database
+        if self.memberController.addMember(name) != 0:
+            print(f"ERROR: Failed to add {name} to the database.")
+            return 1
+        return 0
+    
+    def removeMember(self,name):
+        #remove a member from the database
         if self.memberController.removeMember(name) != 0:
             print(f"ERROR: Failed to remove {name} from the database.")
             return 1
         return 0
     
-    def addRemoveRole(self,role,score=0,addRole=True):
-        #add or remove a role from the database
-        
-        if addRole:
-            if self.memberController.newRole(role,score) != 0:
-                print(f"ERROR: Failed to add {role} role to the database.")
-                return 1
-            return 0
-        
+    def newRole(self,role,score=0):
+        #add a role to the database
+        if self.memberController.newRole(role,score) != 0:
+            print(f"ERROR: Failed to add {role} role to the database.")
+            return 1
+        return 0
+    
+    def deleteRole(self,role):
+        #remove a role from the database
         if self.memberController.deleteRole(role) != 0:
             print(f"ERROR: Failed to remove {role} role from the database.")
             return 1
         return 0
     
-    def addRemoveMemberRole(self,role,name,addRole=True):
-        #add or remove a role from a member
-
+    def addMemberRole(self,role,name):
+        #add a role to a member in the database
         assert isinstance(role,str), 'Argument is not a string.'
         assert isinstance(name,str), 'Argument is not a string.'
 
         if self.memberController.isMember(name):
-            if addRole:
-                if self.memberController.addMemberRole(name,role) != 0:
-                    print(f"ERROR: Failed to give {name} the role {role}.")
-                    return 1
-                return 0
-                
+            if self.memberController.addMemberRole(name,role) != 0:
+                print(f"ERROR: Failed to give {name} the role {role}.")
+                return 1
+            return 0
+        
+        print(f"ERROR: {name} was not found in the database.")
+        return 1
+    
+    def removeMemberRole(self,role,name):
+        #remove a role from a member in the database
+        assert isinstance(role,str), 'Argument is not a string.'
+        assert isinstance(name,str), 'Argument is not a string.'
 
+        if self.memberController.isMember(name):
             if self.memberController.removeMemberRole(name,role) != 0:
                 print(f"ERROR: Failed to remove the role {role} from {name}.")
                 return 1
@@ -96,8 +102,6 @@ class BRIAN():
 
         print(f"ERROR: {name} was not found in the database.")
         return 1
-        
-
 
 class MemberController():
     def __init__(self):
@@ -253,7 +257,7 @@ class RoleModule():
 class MemberModule():
 
     def addMember(self, name):#insert a member into the members table with member_name = "name", if exists ignore this command
-        command = "INSERT OR IGNORE INTO members VALUES ((SELECT max(member_id) FROM members)+1,?,0,0,0,0)"
+        command = "INSERT OR IGNORE INTO members VALUES ((SELECT max(member_id) FROM members)+1,?,0,0,0,0,0)"
         database.execute(str(command),str(name))
         return self.safeCommit()
 
@@ -316,6 +320,8 @@ class ScoreModule():
     
     def updateRankingScore(self,name,aL):
         
+        assert all(isinstance(f, float) for f in aL)
+
         negScore = aL[0] / 3
         neuScore = aL[1]
         posScore = aL[2] * 3
@@ -333,9 +339,14 @@ def main():
     #database.execute("DROP TABLE roles")
     #database.execute("DROP TABLE rolloc")
     #b = BRIAN()
-    sc = ScoreCalculator()
-    print(sc.calculateStr("hello, i hate you very much and like you a little"))
+    #sc = ScoreCalculator()
+    #print(sc.calculateStr("hello, i hate you very much and like you a little"))
+    b = BRIAN()
+    result = b.addRemoveMember("testPerson",True)
+    
 
+    command = "SELECT * FROM members WHERE member_name='testPerson'"
+    print(database.record(command))
 
     """
     command = "INSERT OR IGNORE INTO roles VALUES (1,'pleb',0)"

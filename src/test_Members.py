@@ -13,11 +13,16 @@ class TestMemberModule(unittest.TestCase):
         result = m.safeCommit()
         self.assertEqual(result,0)
 
-    def test_add_member(self):
+    def test_add_member(self): #like this?
         dropDB()
         b = Ranking.BRIAN()
-        result = b.addRemoveMember("testPerson",True)
+        result = b.newMember("testPerson")
         self.assertEqual(result,0)
+
+        command = "SELECT * FROM members WHERE member_name='testPerson'"
+        result2 = database.record(command)
+        self.assertEqual(result2,(1,"testPerson",0,0,0,0,0))
+
 
     def test_remove_member(self):
         dropDB()
@@ -28,7 +33,7 @@ class TestMemberModule(unittest.TestCase):
         result = m.safeCommit()
         self.assertEqual(result,0)
 
-        result = b.addRemoveMember("testPerson",False)
+        result = b.removeMember("testPerson")
         self.assertEqual(result,0)
 
     @unittest.expectedFailure
@@ -41,7 +46,7 @@ class TestMemberModule(unittest.TestCase):
         result = m.safeCommit()
         self.assertEqual(result,0)
 
-        result = b.addRemoveMember("invalidName",False)
+        result = b.removeMember("invalidName")
         self.assertEqual(result,1)
 
     def test_get_member(self):
@@ -68,6 +73,9 @@ class TestMemberModule(unittest.TestCase):
         result = m.getMember("invalidName")
         self.assertEqual(result,1)
 
+    def test_integrationMemberModule(self):
+        #use all methods (or some)
+        pass
 
 class TestRoleModule(unittest.TestCase):
 
@@ -89,13 +97,22 @@ class TestRoleModule(unittest.TestCase):
     def test_remove_role_invalid(self):
         pass
 
-    
 
+class TestBot(unittest.TestCase): #how the what do i do in the world
+
+    def what():
+        pass
+
+
+class TestScore(unittest.TestCase): #does this work????????
+
+    def test_white_updateRanking(self):
+        pass
 
 
 
 def createDB():
-    createCommand = "CREATE TABLE IF NOT EXISTS members(member_id INTEGER PRIMARY KEY, member_name TEXT UNIQUE, ranking_score INTEGER, sentiment REAL, sentiment_divisor INTEGER)"
+    createCommand = "CREATE TABLE IF NOT EXISTS members(member_id INTEGER PRIMARY KEY, member_name TEXT UNIQUE, number_messages INTEGER, ranking_score INTEGER, negative REAL, neutral REAL, Positive REAL)"
     database.execute(createCommand)
     database.commit()
 
