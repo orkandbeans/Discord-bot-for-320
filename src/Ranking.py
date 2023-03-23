@@ -148,9 +148,7 @@ class MemberController:
         #adds a new role to the database as well as the score needed to get the role.
         if scoreToGet == -1:
             scoreToGet = self.roleModule.getNewRoleScore()
-            if scoreToGet == -1:
-                return 1
-
+            
         return self.roleModule.newRole(role,scoreToGet)
         
     
@@ -180,12 +178,15 @@ class RoleModule:
         
 
     def getNewRoleScore(self):
-        command = "SELECT max(role_cost) FROM roles"
+        check = "SELECT role_cost FROM roles"
+        result = self.database.record(check)
+        if result is None:
+            return 0
+        
+        command = "SELECT MAX(role_cost) FROM roles"
         result = self.database.record(command)
-
-        if result[0] is not None:
-            return result[0] + 20
-        return 0
+        
+        return result[0] + 20
 
     def newRole(self,role,scoreToGet):
         #add a new role into the database.

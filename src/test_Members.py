@@ -200,6 +200,31 @@ class TestRoleModule(unittest.TestCase):
         command = "SELECT * FROM rolloc WHERE Rmember_id = 0"
         result2 = database.record(command)
         self.assertEqual(result2,None)
+        
+
+    def test_white_newrole(self):
+        dropDB()
+        b = Ranking.BRIAN(testMode=True)
+        result = b.newRole("testRole",10)
+        self.assertEqual(result,0)#return 0 on successeful add and commit of the database
+
+        #this will directly check if the database added the member correctly
+        command = "SELECT * FROM roles WHERE role_name='testRole'"
+        result2 = database.record(command)
+        self.assertEqual(result2,(1,'testRole',10))
+
+        result = b.newRole("testRole2",-1)
+        self.assertEqual(result,0)#return 0 on successeful add and commit of the database
+
+        #this will directly check if the database added the member correctly
+        command = "SELECT * FROM roles WHERE role_name='testRole2'"
+        result2 = database.record(command)
+        self.assertEqual(result2,(2,'testRole2',30))
+
+        dropDB(True)
+        result = b.newRole("testRole3",-1)
+        self.assertEqual(result,0)#return 0 on successeful add and commit of the database
+
 
 
 class TestBot(unittest.TestCase): #how the what do i do in the world
@@ -208,7 +233,7 @@ class TestBot(unittest.TestCase): #how the what do i do in the world
         pass
 
 
-class TestScore(unittest.TestCase): #does this work????????
+class TestScore(unittest.TestCase): 
 
     def test_white_updateRanking(self):
         pass
