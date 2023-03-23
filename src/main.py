@@ -83,7 +83,7 @@ async def on_message(message):
 
 @bot.event
 async def on_member_ban(guild, member):
-    Brian.removeMember(member)
+    Brian.deleteMember(member)
 
 @bot.event
 async def on_member_join(member):

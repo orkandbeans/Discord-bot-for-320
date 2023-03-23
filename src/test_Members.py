@@ -1,75 +1,91 @@
 import unittest
 import Ranking
-from db import db as database
+from db import dbFT as database
 
 
 
 class TestMemberModule(unittest.TestCase):
 
     def test_safeCommit(self):
-        dropDB(True)
-        m = Ranking.MemberModule()
-        database.execute("INSERT INTO members VALUES (0,'testPerson',0,0,0)")
+        #insert a member into the database, commit if the row count changed
+        dropDB(reset=True)
+        m = Ranking.MemberModule(database)
+        database.execute("INSERT INTO members VALUES (0,'testPerson',0,0,0,0,0)")
         result = m.safeCommit()
-        self.assertEqual(result,0)
+        self.assertEqual(result,0)#A value of 0 should be returned if the database was changed and commited
 
-    def test_add_member(self): #like this?
+        #insert the same values into the database (violating the unique constraint) which will not change the database
+        database.execute("INSERT OR IGNORE INTO members VALUES (0,'testPerson',0,0,0,0,0)")
+        result = m.safeCommit()
+        self.assertEqual(result,1)#A value of 1 should be returned if the database was not changed at all
+
+    def test_new_member(self):
         dropDB()
-        b = Ranking.BRIAN()
+        b = Ranking.BRIAN(testMode=True)
         result = b.newMember("testPerson")
-        self.assertEqual(result,0)
+        self.assertEqual(result,0)#return 0 on successeful add and commit of the database
 
+        #this will directly check if the database added the member correctly
         command = "SELECT * FROM members WHERE member_name='testPerson'"
         result2 = database.record(command)
         self.assertEqual(result2,(1,"testPerson",0,0,0,0,0))
 
 
-    def test_remove_member(self):
+    def test_delete_member(self):
         dropDB()
-        b = Ranking.BRIAN()
-        m = Ranking.MemberModule()
+        b = Ranking.BRIAN(testMode=True)
 
-        database.execute("INSERT INTO members VALUES (0,'testPerson',0,0,0)")
-        result = m.safeCommit()
-        self.assertEqual(result,0)
+        #use sqlite code to insert a member
+        database.execute("INSERT INTO members VALUES (0,'testPerson',0,0,0,0,0)")
+        database.commit()
 
-        result = b.removeMember("testPerson")
-        self.assertEqual(result,0)
+        #delete member with my method
+        result = b.deleteMember("testPerson")
+        self.assertEqual(result,0)#should return a 0 for success
+
+        #select the member to see if it is in the database or not (None)
+        command = "SELECT * FROM members WHERE member_name='testPerson'"
+        result2 = database.record(command)
+        self.assertEqual(result2,None)
 
     @unittest.expectedFailure
     def test_remove_member_invalid(self):
         dropDB()
-        b = Ranking.BRIAN()
-        m = Ranking.MemberModule()
+        b = Ranking.BRIAN(testMode=True)
 
-        database.execute("INSERT INTO members VALUES (0,'testPerson',0,0,0)")
-        result = m.safeCommit()
+        #add a member to the database
+        result = b.newMember('testPerson')
         self.assertEqual(result,0)
 
-        result = b.removeMember("invalidName")
+        #remove a member that does not exists for an error
+        result = b.deleteMember("invalidName")
         self.assertEqual(result,1)
 
     def test_get_member(self):
         dropDB(True)
-        m = Ranking.MemberModule()
+        m = Ranking.MemberModule(database)
 
-        database.execute("INSERT INTO members VALUES (0,'testPerson2',0,0,0)")
-        database.execute("INSERT INTO members VALUES (1,'testPerson',0,0,0)")
+        #insert two members into the database
+        database.execute("INSERT INTO members VALUES (0,'testPerson2',0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (1,'testPerson',0,0,0,0,0)")
         result = m.safeCommit()
         self.assertEqual(result,0)
 
+        #get the data of testPerson and verify the results
         result = m.getMember("testPerson")
-        self.assertEqual(result,(1,"testPerson",0,0,0))
+        self.assertEqual(result,(1,"testPerson",0,0,0,0,0))
 
     @unittest.expectedFailure
     def test_get_member_invalid(self):
         dropDB(True)
-        m = Ranking.MemberModule()
+        m = Ranking.MemberModule(database)
 
+        #insert a member into the database
         database.execute("INSERT INTO members VALUES (0,'testPerson',0,0,0)")
         result = m.safeCommit()
         self.assertEqual(result,0)
 
+        #get a fake member from the database to cause error
         result = m.getMember("invalidName")
         self.assertEqual(result,1)
 

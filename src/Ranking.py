@@ -1,14 +1,20 @@
-from db import db as database
 import nltk
 from nltk.sentiment import SentimentIntensityAnalyzer as SIA
 
 
 
-class BRIAN():
+class BRIAN:
 
-    def __init__(self):
-        self.scoreCalculator = ScoreCalculator()
-        self.memberController = MemberController()
+    def __init__(self, testMode=False):
+        
+
+        if testMode:
+            from db import dbFT as database
+        else:
+            from db import db as database
+
+        self.scoreCalculator = ScoreCalculator(database)
+        self.memberController = MemberController(database)
 
         #when a BRIAN is created, make sure there is a database to access. 
         createCommand = "CREATE TABLE IF NOT EXISTS members(member_id INTEGER PRIMARY KEY, member_name TEXT UNIQUE, number_messages INTEGER, ranking_score INTEGER, negative REAL, neutral REAL, Positive REAL)"
@@ -54,7 +60,7 @@ class BRIAN():
             return 1
         return 0
     
-    def removeMember(self,name):
+    def deleteMember(self,name):
         #remove a member from the database
         if self.memberController.removeMember(name) != 0:
             print(f"ERROR: Failed to remove {name} from the database.")
@@ -103,10 +109,10 @@ class BRIAN():
         print(f"ERROR: {name} was not found in the database.")
         return 1
 
-class MemberController():
-    def __init__(self):
-        self.roleModule = RoleModule()
-        self.memberModule = MemberModule()
+class MemberController:
+    def __init__(self,database):
+        self.roleModule = RoleModule(database)
+        self.memberModule = MemberModule(database)
 
     def roleFind(self,name):
         #check a member's roles from the db and return a list of roles that the member has
@@ -167,14 +173,15 @@ class MemberController():
         self.roleModule.resetRoles(name)
         
 
-class RoleModule():
+class RoleModule:
     
-    def __init__(self):
-        self.roles = {""}
+    def __init__(self,database):
+        self.database = database
+        
 
     def getNewRoleScore(self):
         command = "SELECT max(role_cost) FROM roles"
-        result = database.record(command)
+        result = self.database.record(command)
 
         if result[0] is not None:
             return result[0] + 20
@@ -183,19 +190,19 @@ class RoleModule():
     def newRole(self,role,scoreToGet):
         #add a new role into the database.
         command = "INSERT OR IGNORE INTO roles VALUES((SELECT max(role_id) FROM roles)+1,?1,?2)"
-        database.execute(str(command),str(role),scoreToGet)
+        self.database.execute(str(command),str(role),scoreToGet)
         return self.safeCommit()
             
     def deleteRole(self,role):
         #delete a role from the database
         command = "SELECT role_id FROM roles WHERE role_name = ?"
-        roleId = database.record(str(command), str(role))
+        roleId = self.database.record(str(command), str(role))
         
         command = "DELETE FROM rolloc WHERE Rrole_id = ?"
-        database.execute(str(command),int(roleId[0]))
+        self.database.execute(str(command),int(roleId[0]))
 
         command = "DELETE FROM roles WHERE role_name = ?"
-        database.execute(str(command),str(role))
+        self.database.execute(str(command),str(role))
     
         return self.safeCommit()
 
@@ -203,9 +210,9 @@ class RoleModule():
         #if addRole is true, add a specific role to a member, else, remove a specific role from a member. 
 
         command = "SELECT member_id FROM members WHERE member_name=?"
-        memId = database.record(str(command),str(name))
+        memId = self.database.record(str(command),str(name))
         command = "SELECT role_id FROM roles WHERE role_name=?"
-        rolId = database.record(str(command),str(role))
+        rolId = self.database.record(str(command),str(role))
         
         memId = memId[0]
         rolId = rolId[0]
@@ -214,7 +221,7 @@ class RoleModule():
         assert rolId is not None
         
         command = "INSERT INTO rolloc VALUES (?,?)" if addRole else "DELETE FROM rolloc WHERE Rmember_id=? AND Rrole_id=?"
-        database.execute(str(command),str(memId),str(rolId))
+        self.database.execute(str(command),str(memId),str(rolId))
 
         return self.safeCommit()
 
@@ -223,20 +230,20 @@ class RoleModule():
         shouldHave = self.getRoles(name)
 
         command = "SELECT member_id FROM members WHERE member_name=?"
-        id = database.record(str(command),str(name))
+        id = self.database.record(str(command),str(name))
         
         assert id is not None
 
         for role in shouldHave:#for each role that the member should have, try to insert that role into the database
             command = "INSERT OR IGNORE INTO rolloc VALUES (?,?)"
-            database.execute(str(command),int(id[0]),int(role))
-        database.commit()
+            self.database.execute(str(command),int(id[0]),int(role))
+        self.database.commit()
 
     def getRoles(self,name,allStats=False):
         #get all roles that member "name" is authorized to have. return list of roles as tuples
         roleList = []
-        memberScore = database.record('SELECT ranking_score FROM members WHERE member_name=?',str(name))
-        result = database.records('SELECT role_id, role_name, role_cost FROM roles')
+        memberScore = self.database.record('SELECT ranking_score FROM members WHERE member_name=?',str(name))
+        result = self.database.records('SELECT role_id, role_name, role_cost FROM roles')
 
         if result is None or memberScore is None:
             return []
@@ -248,53 +255,56 @@ class RoleModule():
         return roleList
     
     def safeCommit(self):#runs the commit command while checking if the table was altered at all. return 0 if database was saved, 1 if not
-        if database.rowCount() == 1:
-            database.commit()
+        if self.database.rowCount() == 1:
+            self.database.commit()
             return 0
         return 1
 
 
-class MemberModule():
+class MemberModule:
+
+    def __init__(self,database):
+        self.database = database
 
     def addMember(self, name):#insert a member into the members table with member_name = "name", if exists ignore this command
         command = "INSERT OR IGNORE INTO members VALUES ((SELECT max(member_id) FROM members)+1,?,0,0,0,0,0)"
-        database.execute(str(command),str(name))
+        self.database.execute(str(command),str(name))
         return self.safeCommit()
 
     def removeMember(self,name):#remove a member from the members table with member_name = "name"
         command = "SELECT member_id FROM members WHERE member_name = ?"
-        id = database.record(str(command),str(name))
+        id = self.database.record(str(command),str(name))
         
         assert id is not None
 
         command = "DELETE FROM rolloc WHERE Rmember_id = ?"
-        database.execute(str(command),id[0])
+        self.database.execute(str(command),id[0])
 
         command = "DELETE FROM members WHERE member_name = ?"
-        database.execute(str(command),str(name))
+        self.database.execute(str(command),str(name))
 
         return self.safeCommit()
 
     def getMember(self,name):#get the member with member_name = "name"
         command = "SELECT * FROM members WHERE member_name = ?"
-        result = database.record(str(command),str(name))
+        result = self.database.record(str(command),str(name))
         
         assert result is not None
 
         return result
 
     def safeCommit(self):#runs the commit command while checking if the table was altered at all. return 0 if database was saved, 1 if not
-        if database.rowCount() == 1:
-            database.commit()
+        if self.database.rowCount() == 1:
+            self.database.commit()
             return 0
         return 1
         
     
 
-class ScoreCalculator():
+class ScoreCalculator:
 
-    def __init__(self):#store the word dictionary in self.wordDict in order to rank the attribute scores of each member's messages
-        self.scoreModule = ScoreModule()
+    def __init__(self,database):#store the word dictionary in self.wordDict in order to rank the attribute scores of each member's messages
+        self.scoreModule = ScoreModule(database)
 
         nltk.download('vader_lexicon')
         self.analizer = SIA()
@@ -312,11 +322,15 @@ class ScoreCalculator():
         return attributes
     
 
-class ScoreModule():
+class ScoreModule:
+
+    def __init__(self,database):
+        self.database = database
+
     def adjustScore(self,name,aL):#adjust the ranking score of "name" by 1 and each attribute by the amount described by the list "aL"
         command = "UPDATE members SET number_messages=number_messages + 1, ranking_score=ranking_score, negative=negative + ?2, neutral=neutral + ?3, positive=positive + ?4 WHERE member_name=?1"
-        database.execute(str(command),str(name),aL[0],aL[1],aL[2])
-        database.commit()
+        self.database.execute(str(command),str(name),aL[0],aL[1],aL[2])
+        self.database.commit()
     
     def updateRankingScore(self,name,aL):
         
@@ -329,36 +343,12 @@ class ScoreModule():
         rankingScore = negScore + neuScore + posScore
 
         command = "UPDATE members SET number_messages=number_messages + 1, ranking_score=ranking_score + ?2, negative=negative, neutral=neutral, positive=positive WHERE member_name=?1"
-        database.execute(str(command),str(name),rankingScore)
-        database.commit()
+        self.database.execute(str(command),str(name),rankingScore)
+        self.database.commit()
         
 
 def main():
-  
-    #database.execute("DROP TABLE members")
-    #database.execute("DROP TABLE roles")
-    #database.execute("DROP TABLE rolloc")
-    #b = BRIAN()
-    #sc = ScoreCalculator()
-    #print(sc.calculateStr("hello, i hate you very much and like you a little"))
-    b = BRIAN()
-    result = b.addRemoveMember("testPerson",True)
     
-
-    command = "SELECT * FROM members WHERE member_name='testPerson'"
-    print(database.record(command))
-
-    """
-    command = "INSERT OR IGNORE INTO roles VALUES (1,'pleb',0)"
-    database.execute(str(command))
-    database.commit()
-    command = "INSERT OR IGNORE INTO roles VALUES (2,'teamMember',30)"
-    database.execute(str(command))
-    database.commit()
-    command = "INSERT OR IGNORE INTO roles VALUES (3,'admin',50)"
-    database.execute(str(command))
-    database.commit()"""
-
     pass
    
 if __name__ == "__main__":
