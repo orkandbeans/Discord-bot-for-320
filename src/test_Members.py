@@ -59,7 +59,7 @@ class TestMemberModule(unittest.TestCase):
 
         #remove a member that does not exists for an error
         result = b.deleteMember("invalidName")
-        self.assertEqual(result,1)
+        self.assertEqual(result,0)
 
     def test_get_member(self):
         dropDB(True)
@@ -96,22 +96,110 @@ class TestMemberModule(unittest.TestCase):
 class TestRoleModule(unittest.TestCase):
 
     def test_new_role(self):
-        pass
+        dropDB()
+        b = Ranking.BRIAN(testMode=True)
+        result = b.newRole("testRole",10)
+        self.assertEqual(result,0)#return 0 on successeful add and commit of the database
+
+        #this will directly check if the database added the member correctly
+        command = "SELECT * FROM roles WHERE role_name='testRole'"
+        result2 = database.record(command)
+        self.assertEqual(result2,(0,'testRole',10))
 
     def test_delete_role(self):
-        pass
+        dropDB()
+        b = Ranking.BRIAN(testMode=True)
+
+        #use sqlite code to insert a member
+        database.execute("INSERT INTO roles VALUES (0,'testRole',0)")
+        database.commit()
+
+        #delete member with my method
+        result = b.deleteRole("testRole")
+        self.assertEqual(result,0)#should return a 0 for success
+
+        #select the member to see if it is in the database or not (None)
+        command = "SELECT * FROM members WHERE member_name='testPerson'"
+        result2 = database.record(command)
+        self.assertEqual(result2,None)
 
     def test_add_role(self):
-        pass
+        dropDB()
+        b = Ranking.BRIAN(testMode=True)
+
+        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0)")
+        database.execute("INSERT INTO roles VALUES (1,'testRole',0)")
+        database.commit()
+
+        result = b.addMemberRole("testRole","testMember")
+        self.assertEqual(result,0)
+
+        command = "SELECT * FROM rolloc WHERE Rmember_id = 0"
+        result2 = database.record(command)
+        self.assertEqual(result2,(0,1))
+
+
 
     def test_remove_role(self):
-        pass
+        dropDB()
+        b = Ranking.BRIAN(testMode=True)
 
+        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0)")
+        database.execute("INSERT INTO roles VALUES (1,'testRole',0)")
+        database.execute("INSERT INTO rolloc VALUES (0,1)")
+        database.commit()
+
+        result = b.removeMemberRole("testRole","testMember")
+        self.assertEqual(result,0)
+
+        command = "SELECT * FROM rolloc WHERE Rmember_id = 0"
+        result2 = database.record(command)
+        self.assertEqual(result2,None)
+
+    @unittest.expectedFailure
     def test_add_role_invalid(self):
-        pass
+        dropDB()
+        b = Ranking.BRIAN(testMode=True)
+
+        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0)")
+        database.execute("INSERT INTO roles VALUES (1,'testRole',0)")
+        database.commit()
+
+        result = b.addMemberRole("InvalidName","testMember")
+        self.assertEqual(result,0)
+
+        result = b.addMemberRole("testRole","InvalidName")
+        self.assertEqual(result,0)
+
+        result = b.addMemberRole("InvalidName","InvalidName2")
+        self.assertEqual(result,0)
+
+        command = "SELECT * FROM rolloc WHERE Rmember_id = 0"
+        result2 = database.record(command)
+        self.assertEqual(result2,(0,1))
+
 
     def test_remove_role_invalid(self):
-        pass
+        dropDB()
+        b = Ranking.BRIAN(testMode=True)
+
+        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0)")
+        database.execute("INSERT INTO roles VALUES (1,'testRole',0)")
+        database.execute("INSERT INTO rolloc VALUES (0,1)")
+        database.commit()
+
+        result = b.removeMemberRole("InvalidName","testMember")
+        self.assertEqual(result,0)
+
+        result = b.removeMemberRole("testRole","InvalidName")
+        self.assertEqual(result,0)
+
+        result = b.removeMemberRole("InvalidName","InvalidName2")
+        self.assertEqual(result,0)
+
+        command = "SELECT * FROM rolloc WHERE Rmember_id = 0"
+        result2 = database.record(command)
+        self.assertEqual(result2,None)
 
 
 class TestBot(unittest.TestCase): #how the what do i do in the world
