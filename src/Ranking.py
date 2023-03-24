@@ -125,7 +125,10 @@ class MemberController:
 
     def removeMember(self,name):
         #remove a member from the db based on their name. return 0 on success and 1 on failure
-        return self.memberModule.removeMember(name)
+        if self.isMember:
+            return self.memberModule.removeMember(name)
+        return 1     
+            
     
     def addMember(self,name):
         #add a member to the db with member_name = "name".
@@ -142,7 +145,12 @@ class MemberController:
     def isMember(self,name):
         #check if name is a member in the database
         result = self.memberModule.getMember(name)
-        return 1 if result is not None else 0
+        return True if result != 1 else False
+    
+    def isRole(self,role):
+        #check if role is a role in the database
+        result = self.roleModule.getRole(role)
+        return True if result != 1 else False
         
     def newRole(self,role,scoreToGet=-1):
         #adds a new role to the database as well as the score needed to get the role.
@@ -158,14 +166,21 @@ class MemberController:
 
     def addMemberRole(self,name,role):
         #add a specific role to the member. return 0 on success and 1 on failure
-        result = self.roleModule.adjustSpecificRole(name,role,True)
-        return result
+         
+        if self.isMember(name) and self.isRole(role):
+            result = self.roleModule.adjustSpecificRole(name,role,True)
+            return result
+        
+        return 1
 
     def removeMemberRole(self,name,role):
         #remove a specific role from the member. return 0 on success and 1 on failure
-        result = self.roleModule.adjustSpecificRole(name,role,False)
-        return result
+        if self.isMember(name) and self.isRole(role):
+            result = self.roleModule.adjustSpecificRole(name,role,False)
+            return result
 
+        return 1
+    
     def resetRoles(self,name):
         #reset the roles of the member back to default (given their rankingscore)
         self.roleModule.resetRoles(name)
@@ -255,6 +270,15 @@ class RoleModule:
 
         return roleList
     
+    def getRole(self,role):#get the role with role_name = "role"
+        command = "SELECT * FROM roles WHERE role_name = ?"
+        result = self.database.record(str(command),str(role))
+        
+        if result is None:
+            return 1
+
+        return result
+    
     def safeCommit(self):#runs the commit command while checking if the table was altered at all. return 0 if database was saved, 1 if not
         if self.database.rowCount() == 1:
             self.database.commit()
@@ -276,7 +300,8 @@ class MemberModule:
         command = "SELECT member_id FROM members WHERE member_name = ?"
         id = self.database.record(str(command),str(name))
         
-        assert id is not None
+        if id is None:
+            return 1
 
         command = "DELETE FROM rolloc WHERE Rmember_id = ?"
         self.database.execute(str(command),id[0])
@@ -290,12 +315,13 @@ class MemberModule:
         command = "SELECT * FROM members WHERE member_name = ?"
         result = self.database.record(str(command),str(name))
         
-        assert result is not None
+        if result is None:
+            return 1
 
         return result
 
     def safeCommit(self):#runs the commit command while checking if the table was altered at all. return 0 if database was saved, 1 if not
-        if self.database.rowCount() == 1:
+        if self.database.rowCount() != 0:
             self.database.commit()
             return 0
         return 1
@@ -335,7 +361,7 @@ class ScoreModule:
     
     def updateRankingScore(self,name,aL):
         
-        assert all(isinstance(f, float) for f in aL)
+        assert all(isinstance(f, float) or isinstance (f,int) for f in aL)
 
         negScore = aL[0] / 3
         neuScore = aL[1]
@@ -343,7 +369,7 @@ class ScoreModule:
         
         rankingScore = negScore + neuScore + posScore
 
-        command = "UPDATE members SET number_messages=number_messages + 1, ranking_score=ranking_score + ?2, negative=negative, neutral=neutral, positive=positive WHERE member_name=?1"
+        command = "UPDATE members SET number_messages=number_messages, ranking_score=ranking_score + ?2, negative=negative, neutral=neutral, positive=positive WHERE member_name=?1"
         self.database.execute(str(command),str(name),rankingScore)
         self.database.commit()
         
