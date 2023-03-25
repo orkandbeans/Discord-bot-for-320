@@ -6,19 +6,19 @@ import sqlite3
 
 class JeopardyData:
     def __init__(self):
-        # Create a connection to the database file
+        #Create a connection to the database file
         self.conn = sqlite3.connect('jeopardydatabase.db')
         self.database = self.conn.cursor()
 
-        # Create the Jeopardy table if it doesn't exist
+        #Create the Jeopardy table if it doesn't exist
         self.create()
 
     def create(self):
-        # Drop the Jeopardy table if it exists
+        #Drop the Jeopardy table if it exists
         self.database.execute('''DROP TABLE IF EXISTS Jeopardy''')
         self.conn.commit()
 
-        # Create the table with a primary key, unique constraint, and isInGame column
+        #Create the table with a primary key, unique constraint, and isInGame column
         createCommand = '''CREATE TABLE IF NOT EXISTS Jeopardy(
                             User_id INTEGER PRIMARY KEY,
                             Server_id INTEGER,
@@ -45,18 +45,18 @@ class JeopardyData:
         except sqlite3.Error as error:
             print("Error verifying if user exists in Jeopardy table:", error)
     def start_game(self, user_id, server_id):
-        # Check if the user exists in the database
+        #Check if the user exists in the database
         rows = self.conn.execute("SELECT User_id, Server_id, isInGame FROM Jeopardy").fetchall()
         print(rows)
         if not self.user_exists(user_id, server_id):
-            # If the user does not exist, add them to the database
+            #If the user does not exist, add them to the database
             self.add_user(user_id, server_id)
             self.update_is_in_game(user_id, server_id, 1)
             rows = self.conn.execute("SELECT User_id, Server_id, isInGame FROM Jeopardy").fetchall()
             print(rows)
             return True
         else:
-            # If the user does exist, check if isInGame is set to 1
+            #If the user does exist, check if isInGame is set to 1
             if self.is_in_game(user_id, server_id):
                 print("User is already in a game.")
                 return False
@@ -65,18 +65,18 @@ class JeopardyData:
                 return True
 
     def add_user(self, user_id, server_id):
-        # Check if the user already exists in the Jeopardy table
+        #Check if the user already exists in the Jeopardy table
         query = 'SELECT * FROM Jeopardy WHERE User_id = ?'
         self.database.execute(query, (user_id,))
         row = self.database.fetchone()
         if row is not None:
-            # User already exists, update Server_id if necessary
+            #User already exists, update Server_id if necessary
             if row[1] != server_id:
                 query = 'UPDATE Jeopardy SET Server_id = ? WHERE User_id = ?'
                 self.database.execute(query, (server_id, user_id))
                 self.conn.commit()
         else:
-            # User does not exist, add a new row to the Jeopardy table
+            #User does not exist, add a new row to the Jeopardy table
             query = 'INSERT INTO Jeopardy (User_id, Server_id, isInGame) VALUES (?, ?, 0)'
             self.database.execute(query, (user_id, server_id))
             self.conn.commit()
@@ -108,9 +108,7 @@ class JeopardyData:
         '''
         self.database.execute(update_command, (user_id, server_id))
         self.conn.commit()
-    def __del__(self):
-        # Close the connection to the database file when the object is destroyed
-        self.conn.close()
+
 class GameStart:
     def gameexist(ctx): #checks to see if game exists in file
         user_id = ctx.author.id
@@ -158,10 +156,10 @@ class GameStart:
         with open("jeopardydata.json", "r") as file:
             data = json.load(file)
             #print(data)
-            print(value)
-            print(category)
+            #print(value)
+            #print(category)
             for i in range(len(data)):
-                print(data[i]["category"])
+                #print(data[i]["category"])
                 if data[i]["category"] == category and data[i]["value"] == int(value):
                     return data[i]
     def randomcategory(myrand): #randomly choose categories to pick from, KNOWN PROBLEM: VERY SMALL CHANCE BUT CAN PICK THE SAME CATEGORY TWICE, NEEDS ATTENTION
@@ -207,6 +205,7 @@ class GameStart:
         else:
                 data.extend(questions)
         with open("jeopardydata.json", "w") as file:
+            print(data)
             json.dump(data, file, indent=4)
 
 class Input:
@@ -337,10 +336,12 @@ class Input:
     def pickcategory(input):    #verify the user picked a proper category and value, it must exist for it to return true
         try:
             categoryusermsg, valueusermsg = input.split("# ")  # user must type "Category# Value"
-            print(categoryusermsg)
-            print(valueusermsg)
+          #  print(categoryusermsg)
+          #  print(valueusermsg)
             with open("categorystate.json","r") as file:
                 current_categories = json.load(file)
+               # print("categories found")
+                #print(current_categories)
                 values = [200, 400, 600, 800, 1000]
                 value_index = values.index(int(valueusermsg))
                 if current_categories[categoryusermsg][value_index] is None:    #make sure user picks unique categories and not a previously selected one
