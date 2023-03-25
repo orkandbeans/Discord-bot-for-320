@@ -147,7 +147,7 @@ async def sound_request(ctx, message):
     speaker = ctx.author
     await SoundBoard.Sound.connect(speaker, message)
 
-@bot.command(name=“geoguessr”)
+@bot.command(name="geoguessr")
 async def geoguessr(ctx):
     await geoguessr_game(bot,ctx)
     

@@ -1,5 +1,7 @@
 #Name: John Gregerson --- Course: CS320 --- Assignment: MainProject Feature 1: osrs_info --- Date: 02/05/2023
 
+#ADD GETTER/SETTERS TO CONTROLLER!!!
+
 #DESCRIPTION:
 import requests # API call package
 import mwparserfromhell # Full Name - Media Wiki Parser from Hell
