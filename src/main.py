@@ -9,6 +9,11 @@ from openAI import openAI
 import SoundBoard
 import random
 import os
+<<<<<<< HEAD
+=======
+from geoguessr import geoguessr_game
+from lorelookup import *
+>>>>>>> 1a02bb6ad6d213e3730bc40afed3b946bacc88da
 from osrsinfo import *
 
 
@@ -58,18 +63,61 @@ async def aisetup(ctx: discord.Interaction):
     await dm.send(f"Hello {author}! You just used the setup command for openAI on the server {server}! Please provide the openAI API key to your wallet in order to make openAI commands available. you must provide the"
      + " API key in its entirety in this message. It will then be linked to this server.")
     APIkey = await bot.wait_for('message')
-    # AI.insertKey(APIkey.content, ctx.guild.id)
-    await dm.send("GOOD WE GOT THE KEY :)")
+    AI.insertKey(APIkey.content, ctx.guild.id)
+    await dm.send("Your key has been added to the database! You should now be able to use the Dalle and ChatGPT commands")
 
 @bot.tree.command(name = "dalle", description = "Give a prompt and let openAI generate an image")
 @app_commands.describe(prompt = "What prompt would you like to generate?")
 async def dalle(ctx: discord.Interaction, prompt: str):
+async def dalle(ctx: discord.Interaction, prompt: str, download: bool):
     await ctx.response.send_message("Give us a few seconds to generate your image.")
     user = ctx.user.id
-    data = AI.dalle.generate(prompt)
-    embed = discord.Embed()
-    embed.set_image(url=data)
-    await ctx.channel.send(f"<@{user}> here's your image for prompt: {prompt}", embed=embed)
+    server = ctx.guild.id
+    api = str(AI.fetchAPI(server))
+    api = api[2:len(api)-3]
+    data = AI.dalle.generate(prompt, api, download)
+    if (not download):
+        embed = discord.Embed()
+        embed.set_image(url=data)
+        await ctx.channel.send(f"<@{user}> here's your image for prompt: {prompt}", embed=embed)
+    else:
+        with open("temp/dalle.png", 'rb') as image_file:
+            await ctx.channel.send(f"<@{user}> here's your image for prompt: {prompt}", file=discord.File(image_file, filename='dalle.png'))
+    os.remove("temp/dalle.png")
+
+@bot.tree.command(name = "remove", description = "Remove the current API key from this server for OpenAI")
+async def remove(ctx: discord.Interaction):
+    server = ctx.guild.id
+    if ctx.permissions.administrator:
+        AI.removeKey(server)
+        await ctx.response.send_message("API key successfully removed!")
+    else:
+        await ctx.response.send_message("You are not an admin of this server. If you own the API Key, you must use superRemove")
+
+#@bot.tree.command(name = "sudoremove", description = "Remove an API key from all servers")
+#async def sudoremove(ctx: discord.Interaction):
+#    await ctx.response.send_message("Okay! Creating a DM!")
+#    dm = await ctx.user.create_dm()
+#    author = ctx.user
+#    server = ctx.guild.name
+#    await dm.send(f"Hello {author}! You just used the superRemove command for openAI on the server {server}! Please provide the openAI API key to your wallet in order to remove your API key from the database. you must provide the"
+#     + " API key in its entirety in this message. It will then be removed from any linked servers.")
+#    APIkey = await bot.wait_for('message')
+#    AI.superRemoveKey(APIkey)
+#    await dm.send("Your key has been removed from the database. No servers should be able to use your key now")
+
+
+@bot.tree.command(name = "chat", description = "Give a prompt and let openAI generate text")
+@app_commands.describe(prompt = "What prompt would you like to generate?")
+@app_commands.describe(size = "What size do you want your prompt to return")
+async def dalle(ctx: discord.Interaction, prompt: str, size: int):
+    await ctx.response.send_message("Give us a few seconds to generate your text.")
+    user = ctx.user.id
+    server = ctx.guild.id
+    api = str(AI.fetchAPI(server))
+    api = api[2:len(api)-3]
+    data = AI.chatGPT.generate(prompt, size, api)
+    await ctx.channel.send(f"<@{user}> here's your text for prompt: {prompt} : {data} ")
 
 @bot.event
 async def on_message(message):
@@ -147,10 +195,14 @@ async def sound_request(ctx, message):
     speaker = ctx.author
     await SoundBoard.Sound.connect(speaker, message)
 
+<<<<<<< HEAD
 @bot.command(name="geoguessr")
+=======
+@bot.command(name= "geoguessr")
+>>>>>>> 1a02bb6ad6d213e3730bc40afed3b946bacc88da
 async def geoguessr(ctx):
     await geoguessr_game(bot,ctx)
-    
+
 #-------------------------------------------------------------------
 
 #load the key
