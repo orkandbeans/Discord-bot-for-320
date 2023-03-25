@@ -2,6 +2,115 @@
 import json
 import random
 import asyncio
+import sqlite3
+
+class JeopardyData:
+    def __init__(self):
+        # Create a connection to the database file
+        self.conn = sqlite3.connect('jeopardydatabase.db')
+        self.database = self.conn.cursor()
+
+        # Create the Jeopardy table if it doesn't exist
+        self.create()
+
+    def create(self):
+        # Drop the Jeopardy table if it exists
+        self.database.execute('''DROP TABLE IF EXISTS Jeopardy''')
+        self.conn.commit()
+
+        # Create the table with a primary key, unique constraint, and isInGame column
+        createCommand = '''CREATE TABLE IF NOT EXISTS Jeopardy(
+                            User_id INTEGER PRIMARY KEY,
+                            Server_id INTEGER,
+                            isInGame INTEGER,
+                            UNIQUE(User_id, Server_id))'''
+        self.database.execute(createCommand)
+        self.conn.commit()
+        print("db made")
+
+    def get_all_data(self):
+        query = "SELECT * FROM Jeopardy"
+        cursor = self.conn.execute(query)
+        rows = cursor.fetchall()
+        for row in rows:
+            print(row)
+    def user_exists(self, user_id, server_id):
+        try:
+            self.database.execute("SELECT * FROM Jeopardy WHERE User_id = ? AND Server_id = ?", (user_id, server_id))
+            row = self.database.fetchone()
+            if row is not None:
+                return True
+            else:
+                return False
+        except sqlite3.Error as error:
+            print("Error verifying if user exists in Jeopardy table:", error)
+    def start_game(self, user_id, server_id):
+        # Check if the user exists in the database
+        rows = self.conn.execute("SELECT User_id, Server_id, isInGame FROM Jeopardy").fetchall()
+        print(rows)
+        if not self.user_exists(user_id, server_id):
+            # If the user does not exist, add them to the database
+            self.add_user(user_id, server_id)
+            self.update_is_in_game(user_id, server_id, 1)
+            rows = self.conn.execute("SELECT User_id, Server_id, isInGame FROM Jeopardy").fetchall()
+            print(rows)
+            return True
+        else:
+            # If the user does exist, check if isInGame is set to 1
+            if self.is_in_game(user_id, server_id):
+                print("User is already in a game.")
+                return False
+            else:
+                self.update_is_in_game(user_id, server_id, 1)
+                return True
+
+    def add_user(self, user_id, server_id):
+        # Check if the user already exists in the Jeopardy table
+        query = 'SELECT * FROM Jeopardy WHERE User_id = ?'
+        self.database.execute(query, (user_id,))
+        row = self.database.fetchone()
+        if row is not None:
+            # User already exists, update Server_id if necessary
+            if row[1] != server_id:
+                query = 'UPDATE Jeopardy SET Server_id = ? WHERE User_id = ?'
+                self.database.execute(query, (server_id, user_id))
+                self.conn.commit()
+        else:
+            # User does not exist, add a new row to the Jeopardy table
+            query = 'INSERT INTO Jeopardy (User_id, Server_id, isInGame) VALUES (?, ?, 0)'
+            self.database.execute(query, (user_id, server_id))
+            self.conn.commit()
+
+    def is_in_game(self, user_id, server_id):
+        try:
+            self.database.execute("SELECT isInGame FROM Jeopardy WHERE User_id = ? AND Server_id = ?", (user_id, server_id))
+            row = self.database.fetchone()
+            if row is not None and row[0] == 1:
+                return True
+            else:
+                return False
+        except sqlite3.Error as error:
+            print("Error checking isInGame value for user in Jeopardy table:", error)
+
+    def update_is_in_game(self, user_id, server_id, value):
+        try:
+            self.database.execute("UPDATE Jeopardy SET isInGame = ? WHERE User_id = ? AND Server_id = ?",
+                                  (value, user_id, server_id))
+            self.conn.commit()
+            print("isInGame value updated in Jeopardy table.")
+        except sqlite3.Error as error:
+            print("Error updating isInGame value for user in Jeopardy table:", error)
+    def end_game(self, user_id: int, server_id: int):
+        update_command = '''
+            UPDATE Jeopardy
+            SET isInGame = 0
+            WHERE User_id = ? AND Server_id = ?
+        '''
+        self.database.execute(update_command, (user_id, server_id))
+        self.conn.commit()
+    def __del__(self):
+        # Close the connection to the database file when the object is destroyed
+        self.conn.close()
 class GameStart:
     def startgame(command, numberofcategories):#, username, channel):
 
@@ -74,21 +183,46 @@ class GameStart:
             json.dump(data, file, indent=4)
 
 class Input:
-    async def playgame(ctx, arg, bot):
-        money = 0
 
+    async def playgame(myjeopardy, ctx, arg, bot):
+        money = 0
+        user_id = ctx.author.id
+        server_id = ctx.guild.id
+        print(user_id)
+        print(server_id)
+        is_new_game = myjeopardy.start_game(user_id, server_id)
+        if not is_new_game:
+         print("User already in game")
+         return
+        else:
+            print("User is not in game, making new one")
+        def checkifquit(m):
+            if m.content == "quit":
+                GameBoard.gameover(myjeopardy, m)
+                print("It happened")
+                return True
+            else:
+                return False
         def check(m):  # only allow the author to answer
             return m.author == ctx.author
 
         handle = Input.myhandle(arg)  # user assumed to input "custom" to start a game
         if handle == 'custom':
+
             intro = await ctx.send("How many categories would you like to play with? Pick between 1 and 5.")
             usermsg = await bot.wait_for('message', check=check)  # wait for author to type in answer
+            if(checkifquit(usermsg)):
+                await ctx.send("Ending game")
+                return
+
             await usermsg.delete()
             await intro.delete()
             while not Input.checkcategoryamt(usermsg.content):
                 await ctx.send("Please enter a valid int")
                 usermsg = await bot.wait_for('message', check=check)
+                if (checkifquit(usermsg)):
+                    await ctx.send("Ending game")
+                    return
             # usermsg is how many categories to play with
             botmessage = await ctx.send("``` Choosing categories: ```")
             output = GameStart.startgame(arg, usermsg.content)
@@ -100,12 +234,18 @@ class Input:
             await botmessage.edit(content=botmessageupdate)  # Game table is drawn, categories and values printed
         while (1):
             usermsg = await bot.wait_for('message', check=check)  # wait for author to choose category
+            if(checkifquit(usermsg)):
+                await ctx.send("Ending game")
+                return
             # categoryusermsg, valueusermsg = usermsg.content.split("# ") #user must type "Category# Value"
             while not Input.pickcategory(usermsg.content):  # loop until category chosen correctly
                 error = await ctx.send("Please enter valid category")
                 await usermsg.delete()
                 await asyncio.sleep(1)
                 usermsg = await bot.wait_for('message', check=check)
+                if (checkifquit(usermsg)):
+                    await ctx.send("Ending game")
+                    return
                 await error.delete()
             await asyncio.sleep(1)
             await usermsg.delete()
@@ -114,6 +254,9 @@ class Input:
             question = GameStart.pullquestion(categoryusermsg, valueusermsg)
             myquestion = await ctx.send(question["question"])  # SEND QUESTION
             usermsg = await bot.wait_for('message', check=check)
+            if(checkifquit(usermsg)):
+                await ctx.send("Ending game")
+                return
             result = Input.answer(question["answer"], usermsg.content, valueusermsg)
             await botmessage.edit(content=botmessageupdate)  # UPDATE TABLE
             if int(result) < 0:
@@ -127,10 +270,12 @@ class Input:
             await myquestion.delete()
             await sendresult.delete()
             await prize.delete()
-            if GameBoard.gameover("hello"): break
+            if GameBoard.gameover(myjeopardy, ctx): break
             # if GameBoard.gameover is True: break
         await ctx.send("You earned " + str(money))
         await ctx.send("Thanks for playing!")
+        myjeopardy.end_game(user_id, server_id)
+
     def checkcategoryamt(input):    #make sure user wants reasonable amount of categories, it takes substantial time to make one
         try:
             value = int(input)
@@ -222,7 +367,11 @@ class GameBoard:
             message += "\n"
         message += "```"
         return message
-    def gameover(hello):        #check to see if all values are null for game over
+    def gameover(myjeopardy, user):        #check to see if all values are null for game over
+        if(user.content == "quit"):
+            print("Quiting because user said so")
+            myjeopardy.end_game(user.author.id, user.guild.id)
+            return True
         with open("categorystate.json", "r") as f:
             current_categories = json.load(f)
             game_over = True
