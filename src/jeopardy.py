@@ -219,6 +219,7 @@ class Input:
         is_new_game = myjeopardy.start_game(user_id, server_id)
         if not is_new_game:
          print("User already in game")
+         await ctx.send("Hol up wait a minute, you is in a game fool")
          return
         else:
             print("User is not in game, making new one")
@@ -404,6 +405,8 @@ class GameBoard:
             message += "\n"
         message += "```"
         return message
+
+    #NEEDS ADDING: CHECK IF USER HAS Content attribute before checking user.content k thx bye
     def gameover(myjeopardy, user):        #check to see if all values are null for game over
         if(user.content == "quit"):
             print("Quiting because user said so")
