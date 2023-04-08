@@ -31,10 +31,19 @@ async def on_ready():
 
     #get the guild with all users in our specific discord and run an update on the members of the database
     server = discord.utils.get(bot.guilds)
-    memberList = bot.get_guild(server.id).members
-    roleList = bot.get_guild(server.id).roles
+    guild = bot.get_guild(server.id)
+    memberList = guild.members
+    roleList = []
+    for role in bot.get_guild(server.id).roles:
+        if role.is_bot_managed():
+            continue
+        roleList.append(role)
+            
     Brian.initRoles(roleList)
     Brian.updateMembers(memberList)
+
+    for channel in guild.text_channels:
+        await searchMessages(channel)
 
     #try to sync all commands that aren't actively in the tree or have been altered
     try:
@@ -77,9 +86,36 @@ async def dalle(ctx: discord.Interaction, prompt: str):
 
 @bot.event
 async def on_message(message):
-    if message.author == bot.user:
+    member = message.author
+    if member == bot.user:
         return
-    Brian.updateScore(message.author,message.content)
+    Brian.updateScore(member,message.content)
+    
+    await updateRoles(member)
+    
+async def searchMessages(channel):
+    async for message in channel.history(limit=None):
+        if message.author.bot:
+            continue
+        Brian.updateScore(message.author,message.content)
+        await updateRoles(message.author)
+    
+async def updateRoles(member):
+    result = Brian.getMRoles(member)
+    hasRoles = []
+
+    for role in member.roles:
+        hasRoles.append(role.name)
+
+    for role in result:
+        if role not in hasRoles:
+            #add role to member in discord
+            this = discord.utils.get(member.guild.roles, name=str(role))
+            if this is not None:
+                await member.add_roles(this)
+            else:
+                print(role + " role does not exist.")
+    
 
 @bot.event
 async def on_member_ban(guild, member):
@@ -87,7 +123,8 @@ async def on_member_ban(guild, member):
 
 @bot.event
 async def on_member_join(member):
-    Brian.newMember(member)
+    if not member.bot:
+        Brian.newMember(member)
 
 @bot.tree.command(name="newrole")
 async def newrole(ctx: discord.Interaction,role: str,score: int):

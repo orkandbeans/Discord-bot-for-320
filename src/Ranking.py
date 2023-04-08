@@ -48,6 +48,7 @@ class BRIAN:
         #change the member "name"'s score based on what they said in their message
         if self.scoreCalculator.changeScore(name,message) != 0:
             print(f"ERROR: Failed to change {name}'s score.")
+        self.memberController.resetRoles(name)
 
     def getMRoles(self,name):
         #get all roles that a member has and return a list of role names.
@@ -325,7 +326,7 @@ class MemberModule:
             self.database.commit()
             return 0
         return 1
-        
+    
     
 
 class ScoreCalculator:
