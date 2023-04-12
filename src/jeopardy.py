@@ -1,9 +1,11 @@
 #Jake Onkka --Jeopardy Features --CSE320
 import json
 import random
+import discord
 import asyncio
 import sqlite3
-
+intents = discord.Intents.default()
+client = discord.Client(intents=intents)
 class JeopardyData:
     def __init__(self):
         #Create a connection to the database file
@@ -126,19 +128,7 @@ class GameStart:
          #           return False
         return False
         return True
-    def gamemake(ctx):
-        user_id = str(ctx.author.id)
-        guild_id = int(ctx.guild.id)
-        channel_id = int(ctx.channel.id)
-        data = {
-            "user_id": user_id,
-            "guild_id": guild_id,
-            "channel_id": channel_id
-        }
-        with open("games.json","a") as file:
-            json.dump(data,file)
-    def startgame(command, numberofcategories):#, username, channel):
-
+    def startgame(command, numberofcategories):
         command = command.lower()
         if command == 'custom':     #Custom Game Solo: In Progress
         #    print(f"{username} from: ({channel})")
@@ -235,15 +225,9 @@ class Input:
             return m.author == ctx.author
 
         handle = Input.myhandle(arg)  # user assumed to input "custom" to start a game
+
         if handle == 'custom':
 
-
-
-           # doesGameExist = GameStart.gameexist(ctx)
-           # if (doesGameExist):
-            #    await ctx.send("Error, user already playing")
-            #    return
-            GameStart.gamemake(ctx)
 
             intro = await ctx.send("How many categories would you like to play with? Pick between 1 and 5.")
             usermsg = await bot.wait_for('message', check=check)  # wait for author to type in answer
@@ -268,49 +252,68 @@ class Input:
             GameBoard.initcategories(output)
             #####
             await botmessage.edit(content=botmessageupdate)  # Game table is drawn, categories and values printed
-        while (1):
-            usermsg = await bot.wait_for('message', check=check)  # wait for author to choose category
-            if(checkifquit(usermsg)):
-                await ctx.send("Ending game")
-                return
-            # categoryusermsg, valueusermsg = usermsg.content.split("# ") #user must type "Category# Value"
-            while not Input.pickcategory(usermsg.content):  # loop until category chosen correctly
-                error = await ctx.send("Please enter valid category")
-                await usermsg.delete()
-                await asyncio.sleep(1)
-                usermsg = await bot.wait_for('message', check=check)
-                if (checkifquit(usermsg)):
+            while (1):
+                usermsg = await bot.wait_for('message', check=check)  # wait for author to choose category
+                if(checkifquit(usermsg)):
                     await ctx.send("Ending game")
                     return
-                await error.delete()
-            await asyncio.sleep(1)
-            await usermsg.delete()
-            categoryusermsg, valueusermsg = usermsg.content.split("# ")  # user must type "Category# Value"
-            botmessageupdate = GameBoard.updatetable(output, categoryusermsg, int(valueusermsg))
-            question = GameStart.pullquestion(categoryusermsg, valueusermsg)
-            myquestion = await ctx.send(question["question"])  # SEND QUESTION
-            usermsg = await bot.wait_for('message', check=check)
-            if(checkifquit(usermsg)):
-                await ctx.send("Ending game")
-                return
-            result = Input.answer(question["answer"], usermsg.content, valueusermsg)
-            await botmessage.edit(content=botmessageupdate)  # UPDATE TABLE
-            if int(result) < 0:
-                sendresult = await ctx.send("Wrong, the correct response is: " + question["answer"])
-            else:
-                sendresult = await ctx.send("Correct!")
-            money += int(result)
-            prize = await ctx.send("You got " + result)
-            await asyncio.sleep(5)
-            await usermsg.delete()
-            await myquestion.delete()
-            await sendresult.delete()
-            await prize.delete()
-            if GameBoard.gameover(myjeopardy, ctx): break
-            # if GameBoard.gameover is True: break
-        await ctx.send("You earned " + str(money))
-        await ctx.send("Thanks for playing!")
-        myjeopardy.end_game(user_id, server_id)
+                # categoryusermsg, valueusermsg = usermsg.content.split("# ") #user must type "Category# Value"
+                while not Input.pickcategory(usermsg.content):  # loop until category chosen correctly
+                    error = await ctx.send("Please enter valid category")
+                    await usermsg.delete()
+                    await asyncio.sleep(1)
+                    usermsg = await bot.wait_for('message', check=check)
+                    if (checkifquit(usermsg)):
+                        await ctx.send("Ending game")
+                        return
+                    await error.delete()
+                await asyncio.sleep(1)
+                await usermsg.delete()
+                categoryusermsg, valueusermsg = usermsg.content.split("# ")  # user must type "Category# Value"
+                botmessageupdate = GameBoard.updatetable(output, categoryusermsg, int(valueusermsg))
+                question = GameStart.pullquestion(categoryusermsg, valueusermsg)
+                myquestion = await ctx.send(question["question"])  # SEND QUESTION
+                usermsg = await bot.wait_for('message', check=check)
+                if(checkifquit(usermsg)):
+                    await ctx.send("Ending game")
+                    return
+                result = Input.answer(question["answer"], usermsg.content, valueusermsg)
+                await botmessage.edit(content=botmessageupdate)  # UPDATE TABLE
+                if int(result) < 0:
+                    sendresult = await ctx.send("Wrong, the correct response is: " + question["answer"])
+                else:
+                    sendresult = await ctx.send("Correct!")
+                money += int(result)
+                prize = await ctx.send("You got " + result)
+                await asyncio.sleep(5)
+                await usermsg.delete()
+                await myquestion.delete()
+                await sendresult.delete()
+                await prize.delete()
+                if GameBoard.gameover(myjeopardy, usermsg): break
+                # if GameBoard.gameover is True: break
+            await ctx.send("You earned " + str(money))
+            await ctx.send("Thanks for playing!")
+            myjeopardy.end_game(user_id, server_id)
+
+        if handle == 'multi':
+            players = []
+            intro = await ctx.send("Welcome to Jeopardy, waiting for players...")
+            await intro.add_reaction('✅')
+            await asyncio.sleep(4)
+            # Get the list of reactions on the waiting message
+            waiting_message = await ctx.channel.fetch_message(intro.id)
+            await waiting_message.clear_reactions()  # remove all reactions from the message
+            for reaction in waiting_message.reactions:
+                print(reaction)
+                if reaction.emoji == '✅':
+                    async for user in reaction.users():
+                        print(user.id)
+                        if user.id != user.id not in players:
+                            players.append(user.id)
+                            print(f'{user.name} has joined the game! Players: {players}')
+            await waiting_message.edit(
+                content=f'{len(players)} players have joined the game!')  # update the waiting message
 
     def checkcategoryamt(input):    #make sure user wants reasonable amount of categories, it takes substantial time to make one
         try:
@@ -324,6 +327,8 @@ class Input:
     def myhandle(arg):  #lowercase
         arg = arg.lower()
         if arg == 'custom':
+            return arg
+        if arg == 'multi':
             return arg
         return -1
 

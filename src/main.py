@@ -40,10 +40,12 @@ async def on_ready():
 @bot.command(name="jeopardy", pass_context=True)
 async def jeopardy(ctx, arg):
     #print(ctx)
-    myjeopardy.get_all_data()
+    #myjeopardy.get_all_data()
+    #if Input.myhandle(arg) == 'multi':
+
     await Input.playgame(myjeopardy, ctx, arg, bot)
     print("Game has ended and back in main")
-    myjeopardy.get_all_data()
+    #myjeopardy.get_all_data()
 # -------------------------------------------------------------------
 
 
