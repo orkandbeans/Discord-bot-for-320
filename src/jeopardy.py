@@ -4,6 +4,7 @@ import random
 import discord
 import asyncio
 import sqlite3
+from discord.ui import Button, View
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 class JeopardyData:
@@ -112,22 +113,7 @@ class JeopardyData:
         self.conn.commit()
 
 class GameStart:
-    def gameexist(ctx): #checks to see if game exists in file
-        user_id = ctx.author.id
-        guild_id = int(ctx.guild.id)
-        channel_id = int(ctx.channel.id)
-        with open("games.json","r") as file:
-            data = json.load(file)
- #           for i in range(len(data)):
- #               print(data(i)["user_id"])
- #               if user_id == data(i)["user_id"]:
- #                   return False
-            for item in data:
-                print(item[user_id])
-         #       if user_id == data[item]["user_id"]:# or channel_id == int(item["channel_id"]) or guild_id == int(item["guild_id"]):
-         #           return False
-        return False
-        return True
+
     def startgame(command, numberofcategories):
         command = command.lower()
         if command == 'custom':     #Custom Game Solo: In Progress
@@ -294,27 +280,21 @@ class Input:
                 # if GameBoard.gameover is True: break
             await ctx.send("You earned " + str(money))
             await ctx.send("Thanks for playing!")
-            myjeopardy.end_game(user_id, server_id)
+            #myjeopardy.end_game(user_id, server_id)
 
         if handle == 'multi':
-            players = []
-            intro = await ctx.send("Welcome to Jeopardy, waiting for players...")
-            await intro.add_reaction('✅')
-            await asyncio.sleep(4)
-            # Get the list of reactions on the waiting message
-            waiting_message = await ctx.channel.fetch_message(intro.id)
-            await waiting_message.clear_reactions()  # remove all reactions from the message
-            for reaction in waiting_message.reactions:
-                print(reaction)
-                if reaction.emoji == '✅':
-                    async for user in reaction.users():
-                        print(user.id)
-                        if user.id != user.id not in players:
-                            players.append(user.id)
-                            print(f'{user.name} has joined the game! Players: {players}')
-            await waiting_message.edit(
-                content=f'{len(players)} players have joined the game!')  # update the waiting message
+            view = MyView(timeout=15)
 
+            button_message = await ctx.send("Click the button to join the list!", view=view)
+            await asyncio.sleep(15)
+            await ctx.message.delete()
+            await button_message.delete()
+            clicked_user_ids = view.get_clicked_user_ids()
+            clicked_user_names = view.get_clicked_user_names()
+            #await ctx.send(f"The following users clicked the button: {clicked_user_ids}")
+            await ctx.send(f"Players: {clicked_user_names}")
+
+        myjeopardy.end_game(user_id, server_id)
     def checkcategoryamt(input):    #make sure user wants reasonable amount of categories, it takes substantial time to make one
         try:
             value = int(input)
@@ -357,6 +337,39 @@ class Input:
         except:
             return False
 
+
+class MyView(View):
+    def __init__(self, timeout):
+        super().__init__(timeout=timeout)
+        self.clicked_users = []
+        self.clicked_users_ids = []
+    @discord.ui.button(label="Join", style=discord.ButtonStyle.primary, custom_id="join_button")
+    async def button_callback(self, button, interaction):
+        user_id = interaction.user.id
+        print(interaction.user.name)
+        guild_id = interaction.guild.id
+        if user_id in self.clicked_users:
+            await interaction.response.send_message(f"{interaction.user.mention} has already joined the lobby.", delete_after=5)
+        else:
+            self.clicked_users.append(interaction.user.name)
+            self.clicked_users_ids.append(user_id)
+
+            await interaction.response.send_message(f"{interaction.user.mention} has joined the lobby.", delete_after=5)
+
+    @discord.ui.button(label="Leave", style=discord.ButtonStyle.primary, custom_id="leave_button")
+    async def leave_button_callback(self, button, interaction):
+        user_id = interaction.user.id
+        if user_id in self.clicked_users:
+            self.clicked_users.append(interaction.user.name)
+            self.clicked_users_ids.append(user_id)
+            await interaction.response.send_message(f"{interaction.user.mention} has left the lobby.", delete_after=5)
+        else:
+            await interaction.response.send_message(f"{interaction.user.mention} is not in the lobby.", delete_after=5)
+
+    def get_clicked_user_ids(self):
+        return self.clicked_users_ids.copy()
+    def get_clicked_user_names(self):
+        return self.clicked_users.copy()
 class GameBoard:
     def drawtable(categories):  #initial create the table
         values = [[200, 400, 600, 800, 1000] for i in range(len(categories))]
