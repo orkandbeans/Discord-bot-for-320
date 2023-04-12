@@ -9,12 +9,8 @@ from openAI import openAI
 import SoundBoard
 import random
 import os
-<<<<<<< HEAD
-=======
-from geoguessr import geoguessr_game
-from lorelookup import *
->>>>>>> 1a02bb6ad6d213e3730bc40afed3b946bacc88da
 from osrsinfo import *
+from osrshighscores import *
 
 
 #Create bot declaration with intents
@@ -47,12 +43,21 @@ async def on_ready():
 
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
+# -----John's Commands-----
 @bot.tree.command(name="osrsinfo")
 async def osrs_info_command(interaction: discord.Interaction, entity_name: str, search_option: int = 0):
     command_output = osrsinfo(entity_name, search_option)
     await interaction.response.send_message(command_output[0])
     for i in range(1, len(command_output)):
         await interaction.followup.send(command_output[i])
+
+@bot.tree.command(name="osrshighscores")
+async def osrs_highscores_command(interaction: discord.Interaction, player_name: str, search_option: int = 0):
+    command_output = osrsinfo(player_name, search_option)
+    await interaction.response.send_message(command_output[0])
+    for i in range(1, len(command_output)):
+        await interaction.followup.send(command_output[i])
+#--------------------------
 
 @bot.tree.command(name="aisetup", description = "Start setup process of openAI API for arnold bot for the server")
 async def aisetup(ctx: discord.Interaction):
@@ -68,7 +73,7 @@ async def aisetup(ctx: discord.Interaction):
 
 @bot.tree.command(name = "dalle", description = "Give a prompt and let openAI generate an image")
 @app_commands.describe(prompt = "What prompt would you like to generate?")
-async def dalle(ctx: discord.Interaction, prompt: str):
+#async def dalle(ctx: discord.Interaction, prompt: str):
 async def dalle(ctx: discord.Interaction, prompt: str, download: bool):
     await ctx.response.send_message("Give us a few seconds to generate your image.")
     user = ctx.user.id
@@ -195,11 +200,7 @@ async def sound_request(ctx, message):
     speaker = ctx.author
     await SoundBoard.Sound.connect(speaker, message)
 
-<<<<<<< HEAD
 @bot.command(name="geoguessr")
-=======
-@bot.command(name= "geoguessr")
->>>>>>> 1a02bb6ad6d213e3730bc40afed3b946bacc88da
 async def geoguessr(ctx):
     await geoguessr_game(bot,ctx)
 
