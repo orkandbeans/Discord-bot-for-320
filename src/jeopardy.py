@@ -184,16 +184,19 @@ class GameStart:
                 myselectcategory = [None] * int(numberofcategories)
                 for i in range(int(numberofcategories)):
                     myrand = random.randint(0, 1000)
-                    selectcategory = GameStart.randomcategory(myrand)
-                    GameStart.savecategory(selectcategory, myjeopardy, run)
+                    selectcategory = GameStart.randomcategory(myrand)   #returns a randomly chosen category
+                    GameStart.savecategory(selectcategory, myjeopardy, run) #writes to jeopardydata.json
                     print(str(selectcategory) + " " + str(i) + " " + str(myrand) + " " + str(numberofcategories))
                     myselectcategory[i] = str(selectcategory)
-                    questions = GameStart.savequestion(selectcategory)
-            with open("jeopardydata.json", "r") as f:
-                jeopardy_data = json.load(f)
-                for question in jeopardy_data:
-                    myjeopardy.insert_questions(question['category'], question['value'], question['question'],
-                                                question['answer'], run)
+                    questions = GameStart.savequestion(selectcategory)  #pulls questions data for the current category
+                    for item in questions:
+                        category = item['category']
+                        value = item['value']
+                        question = item['question']
+                        answer = item['answer']
+                        clean_answer = answer.replace("/", "")
+                        #print(category, value, question, answer)
+                        myjeopardy.insert_questions(category, value, question, clean_answer, run)
             return (myselectcategory)
     def pullquestion(category, value):  #return the question that the user wanted
         with open("jeopardydata.json", "r") as file:
@@ -219,23 +222,23 @@ class GameStart:
             if item["category"] == givencategory:  # check through every item and match based on category and save it's information
                 current_value += 200
                 category = item["category"]
-                value = item["value"]
+                #value = item["value"]
                 question = item["question"]
                 answer = item["answer"]
-                round = item["round"]
-                show_number = item["show_number"]
-                air_date = item["air_date"]
+                #round = item["round"]
+                #show_number = item["show_number"]
+               # air_date = item["air_date"]
                 question_data = {
                     "category": category,
                     "value": current_value,
                     "question": question,
                     "answer": answer,
-                    "round": round,
-                    "show_number": show_number,
-                    "air_date": air_date,
+               #     "round": round,
+               #     "show_number": show_number,
+                #    "air_date": air_date,
                 }
                 questions.append(question_data)
-        return questions
+        return questions[0:5]
     def savecategory(givencategory, myjeopardy, run):    #save the category to a file
         questions = GameStart.savequestion(givencategory)
         try:
@@ -248,7 +251,7 @@ class GameStart:
         else:
                 data.extend(questions[0:5])
         with open("jeopardydata.json", "w") as file:
-            print(data)
+            #print(data)
             json.dump(data, file, indent=4)
 
 
@@ -263,9 +266,9 @@ class Input:
         print(user_id)
         print(server_id)
 
-        def checkifquit(m):
+        def checkifquit(m, game_id):
             if m.content == "quit":
-                GameBoard.gameover(myjeopardy, m)
+                GameBoard.gameover(myjeopardy, m, game_id)
                 print("It happened")
                 return True
             else:
@@ -287,7 +290,7 @@ class Input:
                 print("User is not in game, making new one")
             intro = await ctx.send("How many categories would you like to play with? Pick between 1 and 5.")
             usermsg = await bot.wait_for('message', check=check)  # wait for author to type in answer
-            if(checkifquit(usermsg)):
+            if(checkifquit(usermsg, run)):
                 await ctx.send("Ending game")
                 return
 
@@ -296,7 +299,7 @@ class Input:
             while not Input.checkcategoryamt(usermsg.content):
                 await ctx.send("Please enter a valid int between 1 and 5")
                 usermsg = await bot.wait_for('message', check=check)
-                if (checkifquit(usermsg)):
+                if (checkifquit(usermsg,run)):
                     await ctx.send("Ending game")
                     return
             # usermsg is how many categories to play with
@@ -311,7 +314,7 @@ class Input:
             await botmessage.edit(content=botmessageupdate)  # Game table is drawn, categories and values printed
             while (1):
                 usermsg = await bot.wait_for('message', check=check)  # wait for author to choose category
-                if(checkifquit(usermsg)):
+                if(checkifquit(usermsg, run)):
                     await ctx.send("Ending game")
                     return
                 # categoryusermsg, valueusermsg = usermsg.content.split("# ") #user must type "Category# Value"
@@ -320,7 +323,7 @@ class Input:
                     await usermsg.delete()
                     await asyncio.sleep(1)
                     usermsg = await bot.wait_for('message', check=check)
-                    if (checkifquit(usermsg)):
+                    if (checkifquit(usermsg, run)):
                         await ctx.send("Ending game")
                         return
                     await error.delete()
@@ -330,22 +333,50 @@ class Input:
                 botmessageupdate = GameBoard.updatetable(output, categoryusermsg, int(valueusermsg), myjeopardy, run)
                 question = GameStart.pullquestion(categoryusermsg, valueusermsg)
                 myquestion = await ctx.send(question["question"])  # SEND QUESTION
-                usermsg = await bot.wait_for('message', check=check)
-                if(checkifquit(usermsg)):
-                    await ctx.send("Ending game")
-                    return
-                result = Input.answer(question["answer"], usermsg.content, valueusermsg)
-                await botmessage.edit(content=botmessageupdate)  # UPDATE TABLE
+                print("Answer: " + question["answer"])
+               # print(Input.hint_giver(question["answer"]))
+                help = 0
+                hint_answer=""
+                hint_answer = Input.hint_giver(question["answer"], help, hint_answer)
+                hinter = hint_answer
+                hinter = hinter.replace('_', r'\_')
+                bothint = await ctx.send(hinter)
+
+                while(help < 4):
+                   # hint_answer = await ctx.send(Input.hint_giver(question["answer"], help, hint_answer))
+                    #print("Hint answer " + str(help) + " : " + hint_answer)
+                    if(help > 0):
+                        hint_answer = Input.hint_giver(question["answer"], help, hint_answer)
+                        hinter = hint_answer
+                        hinter = hinter.replace('_', r'\_')
+                        #print("Hinter: " + hinter)
+                        await bothint.edit(content=hinter)
+                    usermsg = await bot.wait_for('message', check=check)
+                    if(checkifquit(usermsg, run)):
+                        await ctx.send("Ending game")
+                        return
+                    result = Input.answer(question["answer"], usermsg.content, valueusermsg)
+                    await botmessage.edit(content=botmessageupdate)  # UPDATE TABLE
+                    if int(result) < 0:
+                        help += 1
+                        sendresult = await ctx.send("Wrong!", delete_after=5)
+                        await usermsg.delete()
+                        #sendresult = await ctx.send("Wrong, the correct response is: " + question["answer"])
+                    else:
+                        sendresult = await ctx.send("Correct!", delete_after=5)
+                        await usermsg.delete()
+                        break
+
                 if int(result) < 0:
-                    sendresult = await ctx.send("Wrong, the correct response is: " + question["answer"])
-                else:
-                    sendresult = await ctx.send("Correct!")
+                    sendresult = await ctx.send("Wrong, the correct response is: " + question["answer"], delete_after=5)
+
                 money += int(result)
                 prize = await ctx.send("You got " + result)
                 await asyncio.sleep(5)
-                await usermsg.delete()
+                #await usermsg.delete()
                 await myquestion.delete()
-                await sendresult.delete()
+                await bothint.delete()
+                #await sendresult.delete()
                 await prize.delete()
                 if GameBoard.gameover(myjeopardy, usermsg, run): break
                 # if GameBoard.gameover is True: break
@@ -399,6 +430,28 @@ class Input:
             return arg
         return -1
 
+    def hint_giver(answer, round, previous_results):
+        words = answer.split()
+        result = ""
+        for word in words:
+            for i, c in enumerate(word):
+                if i == 0 or c in previous_results:
+                    result += c
+                else:
+                    result += "_"
+            result += " "
+        num_hints = round
+        for i in range(num_hints):
+            #choose a random word to reveal a character for
+            words_with_underscores = [w for w in result.split() if "_" in w]
+            if words_with_underscores:
+                word_to_reveal = random.choice(words_with_underscores)
+                underscore_index = word_to_reveal.index("_")
+                correct_char = answer[result.index(word_to_reveal) + underscore_index]
+                result = result[:result.index(word_to_reveal) + underscore_index] + correct_char + result[result.index(word_to_reveal) + underscore_index + 1:]
+        result = result.strip()
+        print("hidden answer: " + result)
+        return result
     def answer(answer, arg, value): #simple answer check, user must type answer perfectly in accordance to the JSON file, this will be updated for major milestone
         answer = answer.lower()
         arg = arg.lower()
@@ -417,23 +470,7 @@ class Input:
         else:
             print("returning false")
             return False
-'''        try:
-            categoryusermsg, valueusermsg = input.split("# ")  # user must type "Category# Value"
-          #  print(categoryusermsg)
-          #  print(valueusermsg)
-            with open("categorystate.json","r") as file:
-                current_categories = json.load(file)
-               # print("categories found")
-                #print(current_categories)
-                values = [200, 400, 600, 800, 1000]
-                value_index = values.index(int(valueusermsg))
-                if current_categories[categoryusermsg][value_index] is None:    #make sure user picks unique categories and not a previously selected one
-                    return False
-                else:
-                    return True
-        except:
-            return False
-'''
+
 
 class MyView(View):
     def __init__(self, timeout):
