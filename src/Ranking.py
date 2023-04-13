@@ -17,7 +17,7 @@ class BRIAN:
         self.memberController = MemberController(database)
 
         #when a BRIAN is created, make sure there is a database to access. 
-        createCommand = "CREATE TABLE IF NOT EXISTS members(member_id INTEGER PRIMARY KEY, member_name TEXT UNIQUE, number_messages INTEGER, ranking_score INTEGER, negative REAL, neutral REAL, Positive REAL)"
+        createCommand = "CREATE TABLE IF NOT EXISTS members(member_id INTEGER PRIMARY KEY, member_name TEXT UNIQUE, number_messages INTEGER, ranking_score INTEGER, negative REAL, neutral REAL, Positive REAL, history INTEGER)"
         database.execute(createCommand)
         database.commit()
 
@@ -34,6 +34,20 @@ class BRIAN:
         database.execute(createCommand)
         database.commit()
         
+    def shouldSearch(self):
+        #check if the bot should search the history of the channels or not
+        return self.memberController.shouldHistory()
+        
+
+    def historyCheck(self,name):
+        #check if this members history has been reviewed or not
+        result = self.memberController.getMemberHistory(name)
+        return result
+
+    def historyUpdate(self):
+        #update this members history 
+        return self.memberController.updateMemberHistory()
+
     def initRoles(self,roleList):
         #add each role into the database for use.
         for role in roleList:
@@ -109,11 +123,35 @@ class BRIAN:
 
         print(f"ERROR: {name} was not found in the database.")
         return 1
+    
+    def getMemberRankList(self):
+        #gets the list of members that are in the database in ranking score order.
+        result = self.memberController.getRanking()
+        return result
+
 
 class MemberController:
     def __init__(self,database):
         self.roleModule = RoleModule(database)
         self.memberModule = MemberModule(database)
+
+    def getMemberHistory(self,name):
+        #get the history value from a member in the database
+        return self.memberModule.getHistory(name)
+
+    def updateMemberHistory(self):
+        #update the history value from a member in the database
+        return self.memberModule.updateHistory()
+
+    def shouldHistory(self):
+        #check if the history stat is true for all members
+        result = self.memberModule.getAllMembers()
+
+        for member in result:
+            if member[7] == 0:
+                return True
+        return False
+
 
     def roleFind(self,name):
         #check a member's roles from the db and return a list of roles that the member has
@@ -123,6 +161,17 @@ class MemberController:
             roleList.append(role[1])
 
         return roleList
+
+    def getRanking(self):
+        #creates a ranked list for all the members in the discord
+        result = self.memberModule.getAllMembers()
+        rankings = []
+        for member in result:
+            if member[3] != 0:
+                rankings.append([member[3],member[1]])
+        rankings.sort(reverse=True)
+
+        return rankings
 
     def removeMember(self,name):
         #remove a member from the db based on their name. return 0 on success and 1 on failure
@@ -292,8 +341,22 @@ class MemberModule:
     def __init__(self,database):
         self.database = database
 
+    def updateHistory(self):
+
+        command = "UPDATE members SET history = 1"
+        self.database.execute(str(command))
+        self.database.commit()
+        
+
+    def getHistory(self,name):
+        command = "SELECT history FROM members WHERE member_name = ?"
+        result = self.database.record(str(command),str(name))
+        if result is None:
+            return 0
+        return result[0]
+    
     def addMember(self, name):#insert a member into the members table with member_name = "name", if exists ignore this command
-        command = "INSERT OR IGNORE INTO members VALUES ((SELECT max(member_id) FROM members)+1,?,0,0,0,0,0)"
+        command = "INSERT OR IGNORE INTO members VALUES ((SELECT max(member_id) FROM members)+1,?,0,0,0,0,0,0)"
         self.database.execute(str(command),str(name))
         return self.safeCommit()
 
@@ -319,6 +382,11 @@ class MemberModule:
         if result is None:
             return 1
 
+        return result
+    
+    def getAllMembers(self):
+        command = "SELECT * FROM members"
+        result = self.database.records(str(command))
         return result
 
     def safeCommit(self):#runs the commit command while checking if the table was altered at all. return 0 if database was saved, 1 if not
@@ -356,7 +424,7 @@ class ScoreModule:
         self.database = database
 
     def adjustScore(self,name,aL):#adjust the ranking score of "name" by 1 and each attribute by the amount described by the list "aL"
-        command = "UPDATE members SET number_messages=number_messages + 1, ranking_score=ranking_score, negative=negative + ?2, neutral=neutral + ?3, positive=positive + ?4 WHERE member_name=?1"
+        command = "UPDATE members SET number_messages=number_messages + 1, ranking_score=ranking_score, negative=negative + ?2, neutral=neutral + ?3, positive=positive + ?4, history=history WHERE member_name=?1"
         self.database.execute(str(command),str(name),aL[0],aL[1],aL[2])
         self.database.commit()
     
@@ -370,14 +438,14 @@ class ScoreModule:
         
         rankingScore = negScore + neuScore + posScore
 
-        command = "UPDATE members SET number_messages=number_messages, ranking_score=ranking_score + ?2, negative=negative, neutral=neutral, positive=positive WHERE member_name=?1"
+        command = "UPDATE members SET number_messages=number_messages, ranking_score=ranking_score + ?2, negative=negative, neutral=neutral, positive=positive, history=history WHERE member_name=?1"
         self.database.execute(str(command),str(name),rankingScore)
         self.database.commit()
         
 
 def main():
-    
-    pass
-   
+    b = BRIAN()
+    result = b.shouldSearch()
+    print(result)
 if __name__ == "__main__":
     main()

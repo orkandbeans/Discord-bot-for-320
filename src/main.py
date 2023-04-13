@@ -38,13 +38,16 @@ async def on_ready():
         if role.is_bot_managed():
             continue
         roleList.append(role)
-            
+
     Brian.initRoles(roleList)
     Brian.updateMembers(memberList)
 
-    for channel in guild.text_channels:
-        await searchMessages(channel)
-
+    if Brian.shouldSearch():
+        print("Running background scoring...")
+        for channel in guild.text_channels:
+            await searchMessages(channel)
+        Brian.historyUpdate()
+        print("Done with background scoring.")
     #try to sync all commands that aren't actively in the tree or have been altered
     try:
         synced = await bot.tree.sync()
@@ -97,6 +100,10 @@ async def searchMessages(channel):
     async for message in channel.history(limit=None):
         if message.author.bot:
             continue
+        result = Brian.historyCheck(message.author)
+       
+        if result == 1:
+            continue
         Brian.updateScore(message.author,message.content)
         await updateRoles(message.author)
     
@@ -125,6 +132,17 @@ async def on_member_ban(guild, member):
 async def on_member_join(member):
     if not member.bot:
         Brian.newMember(member)
+
+@bot.tree.command(name="listranks")
+async def listranks(ctx: discord.Interaction):
+    result = Brian.getMemberRankList()
+    if result==1:
+        await ctx.response.send_message(f"ERROR: The database did not access any members.")
+    else:
+        i=1
+        for member in result:
+            await ctx.response.send_message(f"{i}. {member[1]} with a score of {member[0]}")
+            i+=1
 
 @bot.tree.command(name="newrole")
 async def newrole(ctx: discord.Interaction,role: str,score: int):
