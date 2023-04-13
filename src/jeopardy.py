@@ -48,6 +48,8 @@ class JeopardyData:
         createCommand = '''
                         CREATE TABLE IF NOT EXISTS Games (
                         Game_id INTEGER,
+                        Cate_id INTEGER,
+                        Quest_id INTEGER,
                         category VARCHAR(255),
                         value INT,
                         question TEXT,
@@ -58,11 +60,15 @@ class JeopardyData:
         self.conn.commit()
 
         print("db made")
-    def insert_questions(self, category, value, question, answer, run):
-        self.database.execute("INSERT INTO Games (Game_id, category, value, question, answer, chosen) VALUES (?, ?, ?, ?, ?, ?)",
-            (run, category, value, question, answer, 1))
+    def insert_questions(self, category, value, question, answer, run, cate_id, quest_id):
+        self.database.execute("INSERT INTO Games (Game_id, Cate_id, Quest_id, category, value, question, answer, chosen) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            (run, cate_id, quest_id, category, value, question, answer, 1))
         self.conn.commit
-
+    def countrows(self, game_id):
+        cursor = self.database.execute("SELECT cate_id, quest_id FROM Games WHERE Game_id = ?", (game_id,))
+        rows = cursor.fetchall()
+        count = len(rows)
+        return count, rows
     def search_questions(self, category, value, game_id):
         cursor = self.database.execute("SELECT * FROM Games WHERE Game_id=? AND category=? AND value=? AND chosen=1", (game_id, category, value))
         result = cursor.fetchall()
@@ -179,12 +185,16 @@ class GameStart:
     def startgame(command, numberofcategories, myjeopardy, run):
         command = command.lower()
         if command == 'custom':     #Custom Game Solo: In Progress
+            category_id=0
+
         #    print(f"{username} from: ({channel})")
             with open("jeopardydata.json", "w") as file: #empty file first
                 myselectcategory = [None] * int(numberofcategories)
                 for i in range(int(numberofcategories)):
+                    question_id = 0
                     myrand = random.randint(0, 1000)
                     selectcategory = GameStart.randomcategory(myrand)   #returns a randomly chosen category
+                    category_id += 1
                     GameStart.savecategory(selectcategory, myjeopardy, run) #writes to jeopardydata.json
                     print(str(selectcategory) + " " + str(i) + " " + str(myrand) + " " + str(numberofcategories))
                     myselectcategory[i] = str(selectcategory)
@@ -195,8 +205,9 @@ class GameStart:
                         question = item['question']
                         answer = item['answer']
                         clean_answer = answer.replace("/", "")
+                        question_id += 1
                         #print(category, value, question, answer)
-                        myjeopardy.insert_questions(category, value, question, clean_answer, run)
+                        myjeopardy.insert_questions(category, value, question, clean_answer, run, category_id, question_id)
             return (myselectcategory)
     def pullquestion(category, value):  #return the question that the user wanted
         with open("jeopardydata.json", "r") as file:
@@ -311,7 +322,9 @@ class Input:
             botmessageupdate = GameBoard.drawtable(output)
             #GameBoard.initcategories(output)
             #####
-            await botmessage.edit(content=botmessageupdate)  # Game table is drawn, categories and values printed
+
+            view = aView(run, myjeopardy, user_id)
+            await botmessage.edit(content=botmessageupdate,view=view)  # Game table is drawn, categories and values printed
             while (1):
                 usermsg = await bot.wait_for('message', check=check)  # wait for author to choose category
                 if(checkifquit(usermsg, run)):
@@ -470,6 +483,36 @@ class Input:
         else:
             print("returning false")
             return False
+class aView(View):
+    def __init__(self, game_id, myjeopardy, user_id):
+        super().__init__()
+        self.game_id = game_id
+        self.user_id = user_id
+        count, rows = myjeopardy.countrows(game_id)
+        # create buttons dynamically
+        print("Making button")
+        for cate_id, quest_id in rows:
+            label = f"{cate_id},{quest_id}"
+            button = Button(label=label, style=discord.ButtonStyle.primary, custom_id=label)
+            self.add_item(button)
+            # add any additional configuration for the button here
+'''
+    @discord.ui.button
+    async def on_button_click(self, button, interaction: discord.Interaction):
+        if interaction.user.id != self.user_id:
+            # ignore if not the correct user
+            return
+        # get the category and question IDs from the custom ID of the button
+        category_id, question_id = button.custom_id.split(",")
+        print(f"Button clicked for category {category_id} and question {question_id}")
+
+    async def interaction_check(self, interaction: discord.Interaction):
+        if interaction.user.id == self.user_id:
+            return True
+        else:
+            await interaction.response.send_message(f"You are not authorized to use this button.", ephemeral=True)
+            return False'''
+
 
 
 class MyView(View):
