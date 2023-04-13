@@ -52,7 +52,7 @@ async def osrs_info_command(interaction: discord.Interaction, entity_name: str, 
         await interaction.followup.send(command_output[i])
 
 @bot.tree.command(name="osrshighscores")
-async def osrs_highscores_command(interaction: discord.Interaction, player_name: str, search_option: int = 0):
+async def osrs_highscores_command(interaction: discord.Interaction, player_name: str, second_player_name: str = "", game_mode: str = "", activity: int = 0, metric: str = ""):
     command_output = osrsinfo(player_name, search_option)
     await interaction.response.send_message(command_output[0])
     for i in range(1, len(command_output)):
