@@ -140,9 +140,12 @@ async def listranks(ctx: discord.Interaction):
         await ctx.response.send_message(f"ERROR: The database did not access any members.")
     else:
         i=1
+        message = ""
         for member in result:
-            await ctx.response.send_message(f"{i}. {member[1]} with a score of {member[0]}")
+            message = message + f"{i}. {member[1]} with a score of {member[0]}\n"
             i+=1
+        await ctx.response.send_message(message)
+            
 
 @bot.tree.command(name="newrole")
 async def newrole(ctx: discord.Interaction,role: str,score: int):
