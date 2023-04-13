@@ -19,6 +19,10 @@ class JeopardyData:
     def create(self):
         #Drop the Jeopardy table if it exists
         self.database.execute('''DROP TABLE IF EXISTS Jeopardy''')
+        self.database.execute('''DROP TABLE IF EXISTS Multiplayer''')
+        self.database.execute('''DROP TABLE IF EXISTS Games''')
+
+
         self.conn.commit()
 
         #Create the table with a primary key, unique constraint, and isInGame column
@@ -26,15 +30,60 @@ class JeopardyData:
                             User_id INTEGER PRIMARY KEY,
                             Server_id INTEGER,
                             isInGame INTEGER,
+                            money INTEGER,
                             UNIQUE(User_id, Server_id))'''
         self.database.execute(createCommand)
         self.conn.commit()
+
+        createCommand = '''
+                        CREATE TABLE IF NOT EXISTS Multiplayer (
+                        User_id INTEGER,
+                        Server_id INTEGER,
+                        Game_id INTEGER,
+                        FOREIGN KEY (User_id, Server_id) REFERENCES Jeopardy(User_id, Server_id),
+                        FOREIGN KEY (Game_id) REFERENCES Games(Game_id))
+                        '''
+        self.database.execute(createCommand)
+        self.conn.commit()
+        createCommand = '''
+                        CREATE TABLE IF NOT EXISTS Games (
+                        Game_id INTEGER,
+                        category VARCHAR(255),
+                        value INT,
+                        question TEXT,
+                        answer TEXT,
+                        chosen INTEGER)
+                        '''
+        self.database.execute(createCommand)
+        self.conn.commit()
+
         print("db made")
+    def insert_questions(self, category, value, question, answer, run):
+        self.database.execute("INSERT INTO Games (Game_id, category, value, question, answer, chosen) VALUES (?, ?, ?, ?, ?, ?)",
+            (run, category, value, question, answer, 1))
+        self.conn.commit
+
+    def search_questions(self, category, value, game_id):
+        cursor = self.database.execute("SELECT * FROM Games WHERE Game_id=? AND category=? AND value=? AND chosen=1", (game_id, category, value))
+        result = cursor.fetchall()
+        if result:
+            self.database.execute("UPDATE Games SET chosen = 0 WHERE Game_id=? AND category=? AND value=?", (game_id,category,value))
+            return result
+        else:
+            return []
+
 
     def get_all_data(self):
         query = "SELECT * FROM Jeopardy"
         cursor = self.conn.execute(query)
         rows = cursor.fetchall()
+        print("From Jeopardy:")
+        for row in rows:
+            print(row)
+        query = "SELECT * FROM Games"
+        cursor = self.conn.execute(query)
+        rows = cursor.fetchall()
+        print("From Games:")
         for row in rows:
             print(row)
     def user_exists(self, user_id, server_id):
@@ -80,7 +129,7 @@ class JeopardyData:
                 self.conn.commit()
         else:
             #User does not exist, add a new row to the Jeopardy table
-            query = 'INSERT INTO Jeopardy (User_id, Server_id, isInGame) VALUES (?, ?, 0)'
+            query = 'INSERT INTO Jeopardy (User_id, Server_id, isInGame, money) VALUES (?, ?, 0, 0)'
             self.database.execute(query, (user_id, server_id))
             self.conn.commit()
 
@@ -114,7 +163,7 @@ class JeopardyData:
 
 class GameStart:
 
-    def startgame(command, numberofcategories):
+    def startgame(command, numberofcategories, myjeopardy, run):
         command = command.lower()
         if command == 'custom':     #Custom Game Solo: In Progress
         #    print(f"{username} from: ({channel})")
@@ -123,10 +172,15 @@ class GameStart:
                 for i in range(int(numberofcategories)):
                     myrand = random.randint(0, 1000)
                     selectcategory = GameStart.randomcategory(myrand)
-                    GameStart.savecategory(selectcategory)
+                    GameStart.savecategory(selectcategory, myjeopardy, run)
                     print(str(selectcategory) + " " + str(i) + " " + str(myrand) + " " + str(numberofcategories))
                     myselectcategory[i] = str(selectcategory)
                     questions = GameStart.savequestion(selectcategory)
+            with open("jeopardydata.json", "r") as f:
+                jeopardy_data = json.load(f)
+                for question in jeopardy_data:
+                    myjeopardy.insert_questions(question['category'], question['value'], question['question'],
+                                                question['answer'], run)
             return (myselectcategory)
     def pullquestion(category, value):  #return the question that the user wanted
         with open("jeopardydata.json", "r") as file:
@@ -169,7 +223,7 @@ class GameStart:
                 }
                 questions.append(question_data)
         return questions
-    def savecategory(givencategory):    #save the category to a file
+    def savecategory(givencategory, myjeopardy, run):    #save the category to a file
         questions = GameStart.savequestion(givencategory)
         try:
             with open("jeopardydata.json", "r") as file:
@@ -179,26 +233,23 @@ class GameStart:
         if data == []:
                 data = questions[0:5]
         else:
-                data.extend(questions)
+                data.extend(questions[0:5])
         with open("jeopardydata.json", "w") as file:
             print(data)
             json.dump(data, file, indent=4)
 
+
+
+
 class Input:
 
-    async def playgame(myjeopardy, ctx, arg, bot):
+    async def playgame(myjeopardy, ctx, arg, bot, run):
         money = 0
         user_id = ctx.author.id
         server_id = ctx.guild.id
         print(user_id)
         print(server_id)
-        is_new_game = myjeopardy.start_game(user_id, server_id)
-        if not is_new_game:
-         print("User already in game")
-         await ctx.send("Hol up wait a minute, you is in a game fool")
-         return
-        else:
-            print("User is not in game, making new one")
+
         def checkifquit(m):
             if m.content == "quit":
                 GameBoard.gameover(myjeopardy, m)
@@ -214,7 +265,13 @@ class Input:
 
         if handle == 'custom':
 
-
+            is_new_game = myjeopardy.start_game(user_id, server_id)
+            if not is_new_game:
+                print("User already in game")
+                await ctx.send("You are already in a game")
+                return
+            else:
+                print("User is not in game, making new one")
             intro = await ctx.send("How many categories would you like to play with? Pick between 1 and 5.")
             usermsg = await bot.wait_for('message', check=check)  # wait for author to type in answer
             if(checkifquit(usermsg)):
@@ -224,14 +281,15 @@ class Input:
             await usermsg.delete()
             await intro.delete()
             while not Input.checkcategoryamt(usermsg.content):
-                await ctx.send("Please enter a valid int")
+                await ctx.send("Please enter a valid int between 1 and 5")
                 usermsg = await bot.wait_for('message', check=check)
                 if (checkifquit(usermsg)):
                     await ctx.send("Ending game")
                     return
             # usermsg is how many categories to play with
             botmessage = await ctx.send("``` Choosing categories: ```")
-            output = GameStart.startgame(arg, usermsg.content)
+            output = GameStart.startgame(arg, usermsg.content,myjeopardy, run)
+            myjeopardy.get_all_data()
 
             #####   FORMATTING OF "Game"
             botmessageupdate = GameBoard.drawtable(output)
@@ -244,7 +302,7 @@ class Input:
                     await ctx.send("Ending game")
                     return
                 # categoryusermsg, valueusermsg = usermsg.content.split("# ") #user must type "Category# Value"
-                while not Input.pickcategory(usermsg.content):  # loop until category chosen correctly
+                while not Input.pickcategory(usermsg.content, myjeopardy, run):  # loop until category chosen correctly
                     error = await ctx.send("Please enter valid category")
                     await usermsg.delete()
                     await asyncio.sleep(1)
@@ -287,18 +345,34 @@ class Input:
 
             button_message = await ctx.send("Click the button to join the list!", view=view)
             await asyncio.sleep(15)
+            print("After waiting here is db")
+            myjeopardy.get_all_data()
             await ctx.message.delete()
             await button_message.delete()
             clicked_user_ids = view.get_clicked_user_ids()
             clicked_user_names = view.get_clicked_user_names()
             #await ctx.send(f"The following users clicked the button: {clicked_user_ids}")
+           # await ctx.send(f"Players: {clicked_user_names}")
+            for user_id in clicked_user_ids:
+                is_new_game = myjeopardy.start_game(user_id, server_id)
+                if not is_new_game:
+                    print("User already in game " + str(user_id))
+                    user = await bot.fetch_user(user_id)
+                    await ctx.send(str(user.name) + " is being removed because they are already in a game", delete_after=5)
+                    clicked_user_ids.remove(user_id)
+                    clicked_user_names.remove(user.name)
+                else:
+                    print("User is not in a previous game, can continue")
             await ctx.send(f"Players: {clicked_user_names}")
+
+
+
 
         myjeopardy.end_game(user_id, server_id)
     def checkcategoryamt(input):    #make sure user wants reasonable amount of categories, it takes substantial time to make one
         try:
             value = int(input)
-            if value >= 0 and value <= 6:
+            if value >= 1 and value <= 5:
                 return True
             else:
                 return False
@@ -319,8 +393,18 @@ class Input:
             return str(value)
         if arg != answer:
             return str("-" + value)
-    def pickcategory(input):    #verify the user picked a proper category and value, it must exist for it to return true
-        try:
+    def pickcategory(input, myjeopardy, game_id):    #verify the user picked a proper category and value, it must exist for it to return true
+        categoryusermsg, valueusermsg = input.split("# ")  # user must type "Category# Value"
+        result = myjeopardy.search_questions(categoryusermsg,valueusermsg, game_id)
+        print(result)
+        if result:
+        #print(result)
+            print("returning true")
+            return True
+        else:
+            print("returning false")
+            return False
+'''        try:
             categoryusermsg, valueusermsg = input.split("# ")  # user must type "Category# Value"
           #  print(categoryusermsg)
           #  print(valueusermsg)
@@ -336,7 +420,7 @@ class Input:
                     return True
         except:
             return False
-
+'''
 
 class MyView(View):
     def __init__(self, timeout):

@@ -21,7 +21,7 @@ from jeopardy import *
 # Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents=discord.Intents.all())
 myjeopardy = JeopardyData()
-
+run = 0
 
 @bot.event
 async def on_ready():
@@ -37,13 +37,13 @@ async def on_ready():
 
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
+
 @bot.command(name="jeopardy", pass_context=True)
 async def jeopardy(ctx, arg):
-    #print(ctx)
-    #myjeopardy.get_all_data()
-    #if Input.myhandle(arg) == 'multi':
-
-    await Input.playgame(myjeopardy, ctx, arg, bot)
+    global run
+    run += 1
+    print(run)
+    await Input.playgame(myjeopardy, ctx, arg, bot, run)
     print("Game has ended and back in main")
     #myjeopardy.get_all_data()
 # -------------------------------------------------------------------
