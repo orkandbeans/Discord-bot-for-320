@@ -72,7 +72,20 @@ class JeopardyData:
         else:
             return []
 
+    def get_table_data(self, game_id):
 
+        cursor = self.database.execute("SELECT category, value FROM Games WHERE chosen = 0 AND Game_id=?", (game_id,))
+        result = cursor.fetchall()
+        print("RESULTS")
+        print(result)
+        return result
+    def check_game_state(self, game_id):
+
+        cursor = self.database.execute("SELECT COUNT(*) FROM GAMES WHERE Game_id=? AND chosen = 1", (game_id,))
+        result = cursor.fetchone()[0]
+        print("COUNT RESULTS")
+        print(result)
+        return(result)
     def get_all_data(self):
         query = "SELECT * FROM Jeopardy"
         cursor = self.conn.execute(query)
@@ -293,7 +306,7 @@ class Input:
 
             #####   FORMATTING OF "Game"
             botmessageupdate = GameBoard.drawtable(output)
-            GameBoard.initcategories(output)
+            #GameBoard.initcategories(output)
             #####
             await botmessage.edit(content=botmessageupdate)  # Game table is drawn, categories and values printed
             while (1):
@@ -314,7 +327,7 @@ class Input:
                 await asyncio.sleep(1)
                 await usermsg.delete()
                 categoryusermsg, valueusermsg = usermsg.content.split("# ")  # user must type "Category# Value"
-                botmessageupdate = GameBoard.updatetable(output, categoryusermsg, int(valueusermsg))
+                botmessageupdate = GameBoard.updatetable(output, categoryusermsg, int(valueusermsg), myjeopardy, run)
                 question = GameStart.pullquestion(categoryusermsg, valueusermsg)
                 myquestion = await ctx.send(question["question"])  # SEND QUESTION
                 usermsg = await bot.wait_for('message', check=check)
@@ -334,7 +347,7 @@ class Input:
                 await myquestion.delete()
                 await sendresult.delete()
                 await prize.delete()
-                if GameBoard.gameover(myjeopardy, usermsg): break
+                if GameBoard.gameover(myjeopardy, usermsg, run): break
                 # if GameBoard.gameover is True: break
             await ctx.send("You earned " + str(money))
             await ctx.send("Thanks for playing!")
@@ -484,23 +497,21 @@ class GameBoard:
         with open("categorystate.json", "w") as f:
             json.dump(categories_values, f)
 
-    def updatetable(categories, category_to_remove, value_to_delete):   #update the table message, save the deletions so game can progress
+    def updatetable(categories, category_to_remove, value_to_delete, myjeopardy, game_id):   #update the table message, save the deletions so game can progress
+
+        rows = myjeopardy.get_table_data(game_id)
         values = [200, 400, 600, 800, 1000]
-        value_index = values.index(value_to_delete)
-
-        with open("categorystate.json", "r") as f:
-            current_categories = json.load(f)
-        current_categories[category_to_remove][value_index] = None
-
-        with open("categorystate.json", "w") as f:
-            json.dump(current_categories, f)
-
+        game_dict = {}
+        for category in categories:
+            game_dict[category] = [v if v not in [row[1] for row in rows if row[0] == category] else None for v in
+                                   values]
+        print(game_dict)
         message = "```\nCategories:\n"
         longest_category_length = max(len(category) for category in categories)
         for i, category in enumerate(categories):
             message += category + " " * (longest_category_length - len(category)) + "\t\t"
             for value in values:
-                if current_categories.get(category, [None, None, None, None, None])[values.index(value)] is None:
+                if game_dict.get(category, [None, None, None, None, None])[values.index(value)] is None:
                     message += "     \t"
                 else:
                     message += str(value) + "\t"
@@ -508,20 +519,15 @@ class GameBoard:
         message += "```"
         return message
 
-    #NEEDS ADDING: CHECK IF USER HAS Content attribute before checking user.content k thx bye
-    def gameover(myjeopardy, user):        #check to see if all values are null for game over
+
+    def gameover(myjeopardy, user, game_id):        #check to see if all values are null for game over
+        count = myjeopardy.check_game_state(game_id)
+
         if(user.content == "quit"):
             print("Quiting because user said so")
             myjeopardy.end_game(user.author.id, user.guild.id)
             return True
-        with open("categorystate.json", "r") as f:
-            current_categories = json.load(f)
-            game_over = True
-            for category_values in current_categories.values():
-                if any(value is not None for value in category_values):
-                    game_over = False
-                    break
-            if game_over:
-                return True
-            else:
-                return False
+        if count == 0:
+            return True
+        else:
+            return False
