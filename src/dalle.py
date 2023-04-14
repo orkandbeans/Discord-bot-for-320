@@ -1,15 +1,8 @@
 import json
 import requests
-import os
 
 class Dalle:
-    def __init__(self, APIkey):
-        self.APIkey=APIkey
-
-    def generate(self, prompt):
-        ##if (self.checkAPI() < 1):
-        ##    raise siteUnavailable()
-        ##    return -1
+    def generate(self, prompt, APIkey, download):
         body = {
             "prompt": prompt,
             "n": 1,
@@ -18,34 +11,38 @@ class Dalle:
         response = requests.post('https://api.openai.com/v1/images/generations',
             headers = {
                 'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + str(self.APIkey)
+                'Authorization': 'Bearer ' + str(APIkey)
             },
             data=json.dumps(body))
         data = response.json()
 
-
-        if "error" in data:
-            raise parseFail()
-            return -2
-        if "data" not in data:
-            raise noImages()
-            return -3
+        if response.status_code == 401:
+            #raise noValidAPI()
+            return "ERROR CODE 1"
+        elif response.status_code == 429:
+            #raise rateLimited()
+            return "ERROR CODE 2"
+        elif response.status_code == 500:
+            #raise siteUnavailable()
+            return "ERROR CODE 3"
+        elif "error" in data:
+            if (data['error']['code'] == None):
+                #raise TOSViolation()
+                return "ERROR CODE 4"
 
         url = data['data'][0]['url']
+        if (download):
+            self.download_image(url)
         return url
 
-    def checkAPI(self):
-        try:
-            r = requests.get('https://api.openai.com/v1/images/generations')
-            r.raise_for_status()
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-            return 0
-        except (requests.exceptions.HTTPError):
-            return -1
-        else:
-            return 1
+    def download_image(self, url):
+        response = requests.get(url)
+        with open("temp/dalle.png", 'wb+') as f:
+            f.write(response.content)
 
 #Exceptions
+
+
 
 class siteUnavailable(Exception):
     """
@@ -53,14 +50,19 @@ class siteUnavailable(Exception):
     """
     pass
 
-class parseFail(Exception):
+class rateLimited(Exception):
     """
-    Dalle API returned an error
+    Too many requests at a time
     """
     pass
 
-class noImages(Exception):
+class noValidAPI(Exception):
     """
-    Dalle API did not return an image
+    Server has no API Key
+    """
+    pass
+class TOSViolation(Exception):
+    """
+    This prompt violates the TOS
     """
     pass
