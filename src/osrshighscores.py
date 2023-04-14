@@ -8,8 +8,56 @@ import unittest
 
 def osrshighscores(player_name: str, second_player_name: str, game_mode: str, activity: int, metric: str):
 
-    #API request URL
-    base_url = "https://secure.runescape.com/m=hiscore_oldschool" + game_mode + "/index_lite.ws?"
+    mode = game_mode.lower()
+    player_one = player_name.lower().replace(" ", "_")
+    player_two = second_player_name.lower().replace(" ", "_")
+   
+    if player_name == "":
+        #(print help message)
+        pass 
+    else:
+    #send request for and store player 1 scores
+        player_one_url = constructrequest(player_one, mode)
+        player_one_scores = requests.get(player_one_url)
+        # check api response code
+        # parse text response
+
+    if second_player_name != "":
+        #send request for and store player 2 scores
+        player_two_url = constructrequest(player_two, mode)
+        player_two_scores = requests.get(player_two_url)
+        isCompareRequest = True
+        #check api response code
+        # parse text response
+    else:
+        isCompareRequest = False
+
+    if isCompareRequest == True:
+        # perform calculations
+        # construct and return comparison output message
+        pass
+    # construct and return single output message
+    return
+    
+
+    # construct and send request
+def constructrequest(player_name: str, game_mode: str):
+    
+    if game_mode == "":
+        #normal highscores
+        mode = ""
+    elif (game_mode.find('hard') != -1 | game_mode == "hcim" | game_mode == "hc"):
+        mode = "_hardcore_ironman"
+    elif (game_mode.find('ult') != -1 | game_mode == "uim"):
+        mode = "_ultimate"
+    elif (game_mode.find('iron') != -1 | game_mode == "im"):
+        mode = "_ironman"
+    else:
+        return("error")
+
+    return("https://secure.runescape.com/m=hiscore_oldschool" + mode + "/index_lite.ws?" + player_name)
+
+def parsetextresponse(api_response: str):
 
     #list of keys for pairing player scores to activities
     activity_list = ["Overall", "Attack", "Defence", "Strength", "Hitpoints",
@@ -32,26 +80,27 @@ def osrshighscores(player_name: str, second_player_name: str, game_mode: str, ac
                     "TzKal-Zuk", "TzTok-Jad", "Venenatis", "Vet\'ion", "Vorkath",
                     "Wintertodt", "Zalcano", "Zulrah",]
     
-
-    #", construct and send request
-        # check game_mode  -- defaults to :normal: other options are Ironman, Ultimate_Ironman, Hardcore_Ironman
-        # if player_name == "" (print help message) else send request for and store player 1 scores
-        # if second_player_name != "" send request for and store player 2 scores
-
-    # parse text response
         # check for activity specification: defaults to :all: can specify any of 48 activities or 24 skills
         # check for metric specification: defaults to :all: can specify rank, level, or experience
         # parse returned scores into arrays and match up to blueprint array (scores of -1 are unranked)
         # send requested data to smaller array
-
-    # perform calculations
-        # if a second player is specified find the difference
-
-    # construct and return output message
-
     pass
 
+def comparescores():
+    # if a second player is specified find the difference
+    pass
 
+def constructsingleoutput():
+    #one player specified
+    pass
+
+def constructcomparisonoutput():
+    #two players specified
+    pass
+
+def errormessage():
+    #improper arguments or api response
+    pass
 
 def main():
     my_scores = requests.get('https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=pvm_gohone').text
