@@ -90,11 +90,24 @@ async def dalle(ctx: discord.Interaction, prompt: str):
 @bot.event
 async def on_message(message):
     member = message.author
-    if member == bot.user:
-        return
-    Brian.updateScore(member,message.content)
-    
-    await updateRoles(member)
+    if not member.bot:
+        Brian.updateScore(member,message.content)
+        await updateRoles(member)
+
+@bot.event
+async def on_message_delete(message):
+    member = message.author
+    if not member.bot:
+        Brian.reduceScore(member,message.content)
+        await updateRoles(member)
+
+@bot.event
+async def on_message_edit(before,after):
+    member = before.author
+    if not member.bot:
+        Brian.reduceScore(member,before.content)
+        Brian.updateScore(member,after.content)
+        await updateRoles(member)
     
 async def searchMessages(channel):
     async for message in channel.history(limit=None):

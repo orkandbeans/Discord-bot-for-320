@@ -17,7 +17,14 @@ class BRIAN:
         self.memberController = MemberController(database)
 
         #when a BRIAN is created, make sure there is a database to access. 
-        createCommand = "CREATE TABLE IF NOT EXISTS members(member_id INTEGER PRIMARY KEY, member_name TEXT UNIQUE, number_messages INTEGER, ranking_score INTEGER, negative REAL, neutral REAL, Positive REAL, history INTEGER)"
+        createCommand = """CREATE TABLE IF NOT EXISTS members(member_id INTEGER PRIMARY KEY,
+                                                            member_name TEXT UNIQUE,
+                                                            number_messages INTEGER,
+                                                            ranking_score INTEGER,
+                                                            negative REAL,
+                                                            neutral REAL,
+                                                            Positive REAL, 
+                                                            history INTEGER)"""
         database.execute(createCommand)
         database.commit()
 
@@ -37,7 +44,10 @@ class BRIAN:
     def shouldSearch(self):
         #check if the bot should search the history of the channels or not
         return self.memberController.shouldHistory()
-        
+    
+    def reduceScore(self,name,message):
+        #reduce score from member when message is deleted
+        return self.scoreCalculator.reduceMemberScore(name,message)
 
     def historyCheck(self,name):
         #check if this members history has been reviewed or not
@@ -346,7 +356,7 @@ class MemberModule:
         command = "UPDATE members SET history = 1"
         self.database.execute(str(command))
         self.database.commit()
-        
+
 
     def getHistory(self,name):
         command = "SELECT history FROM members WHERE member_name = ?"
@@ -404,7 +414,15 @@ class ScoreCalculator:
 
         nltk.download('vader_lexicon')
         self.analizer = SIA()
-    
+
+    def reduceMemberScore(self,name,message):
+        attributeList = self.calculateStr(message)
+        for i in range(len(attributeList)):
+            attributeList[i] = attributeList[i] * (-1)
+        
+        self.scoreModule.adjustScore(name,attributeList)
+        self.scoreModule.updateRankingScore(name,attributeList)
+
     def changeScore(self,name,message):#increment the member's score by the chat increment amount and increment each attribute score by the values in "attributeList"
         attributeList = self.calculateStr(message)
         self.scoreModule.adjustScore(name,attributeList)
@@ -424,7 +442,12 @@ class ScoreModule:
         self.database = database
 
     def adjustScore(self,name,aL):#adjust the ranking score of "name" by 1 and each attribute by the amount described by the list "aL"
-        command = "UPDATE members SET number_messages=number_messages + 1, ranking_score=ranking_score, negative=negative + ?2, neutral=neutral + ?3, positive=positive + ?4, history=history WHERE member_name=?1"
+        command = """UPDATE members SET number_messages=number_messages + 1,
+                    ranking_score=ranking_score,
+                    negative=negative + ?2,
+                    neutral=neutral + ?3,
+                    positive=positive + ?4,
+                    history=history WHERE member_name=?1"""
         self.database.execute(str(command),str(name),aL[0],aL[1],aL[2])
         self.database.commit()
     
@@ -438,7 +461,12 @@ class ScoreModule:
         
         rankingScore = negScore + neuScore + posScore
 
-        command = "UPDATE members SET number_messages=number_messages, ranking_score=ranking_score + ?2, negative=negative, neutral=neutral, positive=positive, history=history WHERE member_name=?1"
+        command = """UPDATE members SET number_messages=number_messages,
+                    ranking_score=ranking_score + ?2,
+                    negative=negative,
+                    neutral=neutral,
+                    positive=positive,
+                    history=history WHERE member_name=?1"""
         self.database.execute(str(command),str(name),rankingScore)
         self.database.commit()
         
