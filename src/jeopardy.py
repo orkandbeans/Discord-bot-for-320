@@ -323,8 +323,8 @@ class Input:
             #GameBoard.initcategories(output)
             #####
 
-            view = aView(run, myjeopardy, user_id)
-            await botmessage.edit(content=botmessageupdate,view=view)  # Game table is drawn, categories and values printed
+            #view = aView(run, myjeopardy, user_id)
+            await botmessage.edit(content=botmessageupdate)  # Game table is drawn, categories and values printed
             while (1):
                 usermsg = await bot.wait_for('message', check=check)  # wait for author to choose category
                 if(checkifquit(usermsg, run)):
@@ -400,7 +400,7 @@ class Input:
         if handle == 'multi':
             view = MyView(timeout=15)
 
-            button_message = await ctx.send("Click the button to join the list!", view=view)
+            button_message = await ctx.send("Click to join the game!", view=view)
             await asyncio.sleep(15)
             print("After waiting here is db")
             myjeopardy.get_all_data()
@@ -422,6 +422,18 @@ class Input:
                     print("User is not in a previous game, can continue")
             await ctx.send(f"Players: {clicked_user_names}")
 
+            # usermsg is how many categories to play with
+            botmessage = await ctx.send("``` Choosing categories: ```")
+            output = GameStart.startgame("custom", 5,myjeopardy, run)
+            myjeopardy.get_all_data()
+
+            #####   FORMATTING OF "Game"
+            botmessageupdate = GameBoard.drawtable(output)
+            #GameBoard.initcategories(output)
+            #####
+
+            newview = aView(run, myjeopardy, user_id)
+            await botmessage.edit(content=botmessageupdate, view=newview)  # Game table is drawn, categories and values printed
 
 
 
@@ -483,36 +495,154 @@ class Input:
         else:
             print("returning false")
             return False
+
+
 class aView(View):
     def __init__(self, game_id, myjeopardy, user_id):
         super().__init__()
         self.game_id = game_id
         self.user_id = user_id
-        count, rows = myjeopardy.countrows(game_id)
+ #       count, rows = myjeopardy.countrows(game_id)
         # create buttons dynamically
-        print("Making button")
-        for cate_id, quest_id in rows:
-            label = f"{cate_id},{quest_id}"
-            button = Button(label=label, style=discord.ButtonStyle.primary, custom_id=label)
-            self.add_item(button)
-            # add any additional configuration for the button here
-'''
-    @discord.ui.button
-    async def on_button_click(self, button, interaction: discord.Interaction):
-        if interaction.user.id != self.user_id:
-            # ignore if not the correct user
-            return
-        # get the category and question IDs from the custom ID of the button
-        category_id, question_id = button.custom_id.split(",")
-        print(f"Button clicked for category {category_id} and question {question_id}")
+#        for cate_id, quest_id in rows:
+#            label = f"Category {cate_id}, Question {quest_id}"
+#            custom_id = f"{cate_id}_{quest_id}"
+#            button = Button(label=label, style=discord.ButtonStyle.primary, custom_id=custom_id)
+#            self.add_item(button)
 
-    async def interaction_check(self, interaction: discord.Interaction):
-        if interaction.user.id == self.user_id:
-            return True
-        else:
-            await interaction.response.send_message(f"You are not authorized to use this button.", ephemeral=True)
-            return False'''
+#Multiplayer game is hardcoded to have 5 categories, so there must be 25 buttons for each category and question
+    @discord.ui.button(label="Cat 1, Quest 1", custom_id="CQ 11")
+    async def callback11(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
 
+
+    @discord.ui.button(label="Cat 1, Quest 2", custom_id="CQ 12")
+    async def callback12(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+
+    @discord.ui.button(label="Cat 1, Quest 3", custom_id="CQ 13")
+    async def callback13(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+
+    @discord.ui.button(label="Cat 1, Quest 4", custom_id="CQ 14")
+    async def callback14(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+
+    @discord.ui.button(label="Cat 1, Quest 5", custom_id="CQ 15")
+    async def callback15(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+
+    @discord.ui.button(label="Cat 2, Quest 1", custom_id="CQ 21")
+    async def callback21(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+
+    @discord.ui.button(label="Cat 2, Quest 2", custom_id="CQ 22")
+    async def callback22(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+
+    @discord.ui.button(label="Cat 2, Quest 3", custom_id="CQ 23")
+    async def callback23(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+
+    @discord.ui.button(label="Cat 2, Quest 4", custom_id="CQ 24")
+    async def callback24(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+
+    @discord.ui.button(label="Cat 2, Quest 5", custom_id="CQ 25")
+    async def callback25(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+    @discord.ui.button(label="Cat 3, Quest 1", custom_id="CQ 31")
+    async def callback31(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 3, Quest 2", custom_id="CQ 32")
+    async def callback32(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 3, Quest 3", custom_id="CQ 33")
+    async def callback33(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 3, Quest 4", custom_id="CQ 34")
+    async def callback34(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 3, Quest 5", custom_id="CQ 35")
+    async def callback35(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 4, Quest 1", custom_id="CQ 41")
+    async def callback41(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 4, Quest 2", custom_id="CQ 42")
+    async def callback42(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 4, Quest 3", custom_id="CQ 43")
+    async def callback43(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 4, Quest 4", custom_id="CQ 44")
+    async def callback44(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 4, Quest 5", custom_id="CQ 45")
+    async def callback45(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 5, Quest 1", custom_id="CQ 51")
+    async def callback51(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 5, Quest 2", custom_id="CQ 52")
+    async def callback52(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 5, Quest 3", custom_id="CQ 53")
+    async def callback53(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 5, Quest 4", custom_id="CQ 54")
+    async def callback54(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
+
+    @discord.ui.button(label="Cat 5, Quest 5", custom_id="CQ 55")
+    async def callback55(self, button: discord.ui.Button, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        print(f"Button {button.custom_id} clicked by user {user_id}")
 
 
 class MyView(View):
