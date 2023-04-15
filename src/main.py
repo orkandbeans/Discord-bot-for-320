@@ -160,6 +160,18 @@ async def on_message_edit(before,after):
         Brian.reduceScore(member,before.content)
         Brian.updateScore(member,after.content)
         await updateRoles(member)
+
+@bot.event
+async def on_reaction_add(_,member):
+    if not member.bot:
+        Brian.reactionAdd(member.name)
+        await updateRoles(member.name)
+
+@bot.event
+async def on_reaction_remove(_,member):
+    if not member.bot:
+        Brian.reactionDelete(member.name)
+        await updateRoles(member.name)
     
 async def searchMessages(channel):
     async for message in channel.history(limit=None):

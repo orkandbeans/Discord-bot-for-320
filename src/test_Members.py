@@ -18,12 +18,12 @@ class TestMemberModule(unittest.TestCase):
         #insert a member into the database, commit if the row count changed
         dropDB(reset=True)
         m = Ranking.MemberModule(database)
-        database.execute("INSERT INTO members VALUES (0,'testPerson',0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (0,'testPerson',0,0,0,0,0,0)")
         result = m.safeCommit()
         self.assertEqual(result,0)#A value of 0 should be returned if the database was changed and commited
 
         #insert the same values into the database (violating the unique constraint) which will not change the database
-        database.execute("INSERT OR IGNORE INTO members VALUES (0,'testPerson',0,0,0,0,0)")
+        database.execute("INSERT OR IGNORE INTO members VALUES (0,'testPerson',0,0,0,0,0,0)")
         result = m.safeCommit()
         self.assertEqual(result,1)#A value of 1 should be returned if the database was not changed at all
 
@@ -37,7 +37,7 @@ class TestMemberModule(unittest.TestCase):
         #this will directly check if the database added the member correctly
         command = "SELECT * FROM members WHERE member_name='testPerson'"
         result2 = database.record(command)
-        self.assertEqual(result2,(1,"testPerson",0,0,0,0,0))
+        self.assertEqual(result2,(1,"testPerson",0,0,0,0,0,0))
 
 
     def test_delete_member(self):
@@ -46,7 +46,7 @@ class TestMemberModule(unittest.TestCase):
         b = Ranking.BRIAN(testMode=True)
 
         #use sqlite code to insert a member
-        database.execute("INSERT INTO members VALUES (0,'testPerson',0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (0,'testPerson',0,0,0,0,0,0)")
         database.commit()
 
         #delete member with my method
@@ -83,14 +83,14 @@ class TestMemberModule(unittest.TestCase):
         m = Ranking.MemberModule(database)
 
         #insert two members into the database
-        database.execute("INSERT INTO members VALUES (0,'testPerson2',0,0,0,0,0)")
-        database.execute("INSERT INTO members VALUES (1,'testPerson',0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (0,'testPerson2',0,0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (1,'testPerson',0,0,0,0,0,0)")
         result = m.safeCommit()
         self.assertEqual(result,0)
 
         #get the data of testPerson and verify the results
         result = m.getMember("testPerson")
-        self.assertEqual(result,(1,"testPerson",0,0,0,0,0))
+        self.assertEqual(result,(1,"testPerson",0,0,0,0,0,0))
 
         #get a fake member from the database to reach the if statement
         result = m.getMember("invalidName")
@@ -111,8 +111,8 @@ class TestMemberModule(unittest.TestCase):
         self.assertFalse(result)
 
         #insert two members into the database
-        database.execute("INSERT INTO members VALUES (0,'testPerson2',0,0,0,0,0)")
-        database.execute("INSERT INTO members VALUES (1,'testPerson',0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (0,'testPerson2',0,0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (1,'testPerson',0,0,0,0,0,0)")
         database.commit()
 
         result = mc.isMember("testPerson")
@@ -203,7 +203,7 @@ class TestRoleModule(unittest.TestCase):
         b = Ranking.BRIAN(testMode=True)
 
         #use sqlite to inssert a member and role
-        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0,0)")
         database.execute("INSERT INTO roles VALUES (1,'testRole',0)")
         database.commit()
 
@@ -237,7 +237,7 @@ class TestRoleModule(unittest.TestCase):
         b = Ranking.BRIAN(testMode=True)
 
         #use sqlite to insert a member,role, and give the member that role
-        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0,0)")
         database.execute("INSERT INTO roles VALUES (1,'testRole',0)")
         database.execute("INSERT INTO rolloc VALUES (0,1)")
         database.commit()
@@ -303,7 +303,7 @@ class TestRoleModule(unittest.TestCase):
         self.assertEqual(result,[])
 
         #use sqlite to insert a member
-        database.execute("INSERT INTO members VALUES (0,'testMember',0,10,0,0,0)")
+        database.execute("INSERT INTO members VALUES (0,'testMember',0,10,0,0,0,0)")
 
         #getroles should return no viable roles
         result = rm.getRoles('testMember')
@@ -330,7 +330,7 @@ class TestScore(unittest.TestCase):
         sm = Ranking.ScoreModule(database)
 
         #use sqlite to insert a member
-        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0,0)")
         database.commit()
 
         #update the ranking score, this will increase it by 11.333 repeating
@@ -346,7 +346,7 @@ class TestScore(unittest.TestCase):
         sm = Ranking.ScoreModule(database)
 
         #use sqlite to insert a member
-        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0)")
+        database.execute("INSERT INTO members VALUES (0,'testMember',0,0,0,0,0,0)")
         database.commit()
 
         #use my method to change the database
@@ -354,14 +354,14 @@ class TestScore(unittest.TestCase):
 
         #verify the correct output of the scores
         result = database.record("SELECT * FROM members WHERE member_name='testMember'")
-        self.assertEqual(result,(0,'testMember',1,0,1,2,3))
+        self.assertEqual(result,(0,'testMember',1,0,1,2,3,0))
 
         #do it again to add to the existing score
         sm.adjustScore('testMember',[1,2,3])
 
         #verify the correct output of the scores
         result = database.record("SELECT * FROM members WHERE member_name='testMember'")
-        self.assertEqual(result,(0,'testMember',2,0,2,4,6))
+        self.assertEqual(result,(0,'testMember',2,0,2,4,6,0))
 
         
 

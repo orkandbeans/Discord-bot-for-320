@@ -415,6 +415,14 @@ class ScoreCalculator:
         nltk.download('vader_lexicon')
         self.analizer = SIA()
 
+    def reactionScore(self,member):
+        self.scoreModule.updateRankingScore(member,[3,3,3])#assign a value of 3 to each attribute for reactions
+        return 0
+    
+    def reactionReduceScore(self,member):
+        self.scoreModule.updateRankingScore(member,[-3,-3,-3])#assign a value of -3 to each attribute for reactions
+        return 0
+
     def reduceMemberScore(self,name,message):
         attributeList = self.calculateStr(message)
         for i in range(len(attributeList)):
