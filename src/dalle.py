@@ -17,17 +17,17 @@ class Dalle:
         data = response.json()
 
         if response.status_code == 401:
-            #raise noValidAPI()
+            print("Server has no API Key")
             return "ERROR CODE 1"
         elif response.status_code == 429:
-            #raise rateLimited()
+            print("Too many requests at a time or hard limit reached")
             return "ERROR CODE 2"
         elif response.status_code == 500:
-            #raise siteUnavailable()
+            print("Dalle API is unavailable")
             return "ERROR CODE 3"
         elif "error" in data:
             if (data['error']['code'] == None):
-                #raise TOSViolation()
+                print("Violation of TOS for openAI")
                 return "ERROR CODE 4"
 
         url = data['data'][0]['url']
@@ -39,30 +39,3 @@ class Dalle:
         response = requests.get(url)
         with open("temp/dalle.png", 'wb+') as f:
             f.write(response.content)
-
-#Exceptions
-
-
-
-class siteUnavailable(Exception):
-    """
-    Dalle API is unavailable
-    """
-    pass
-
-class rateLimited(Exception):
-    """
-    Too many requests at a time
-    """
-    pass
-
-class noValidAPI(Exception):
-    """
-    Server has no API Key
-    """
-    pass
-class TOSViolation(Exception):
-    """
-    This prompt violates the TOS
-    """
-    pass
