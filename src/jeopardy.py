@@ -440,11 +440,7 @@ class Input:
             newview = aView(run, myjeopardy, user_id, ctx, botmessage)
             await botmessage.edit(content=botmessageupdate, view=newview)  # Game table is drawn, categories and values printed
 
-            async def wait_for_button_click(client):
-                interaction = await client.wait_for("button_click")
-                return interaction
-            count = 0
-            # Inside your while loop, wait for a button click
+
             cat = myjeopardy.get_game_categories(run)
             categories = [r[0] for r in cat]
 
