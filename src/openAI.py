@@ -18,7 +18,7 @@ class openAI:
         return database.record('SELECT apiKey FROM api WHERE serverID=?', str(serverID))
 
     def insertKey(self, APIkey, serverID):
-        insertCommand = f"INSERT INTO api VALUES ({serverID}, \"{APIkey}\")"
+        insertCommand = f"INSERT OR IGNORE INTO api VALUES ({serverID}, \"{APIkey}\")"
         database.execute(insertCommand)
         database.commit()
 
@@ -28,6 +28,6 @@ class openAI:
         database.commit()
 
     def superRemoveKey(self, APIkey):
-        deleteCommand = f"DELETE FROM api WHERE apiKey={APIkey}"
+        deleteCommand = f"DELETE FROM api WHERE apiKey=\"{str(APIkey)}\""
         database.execute(deleteCommand)
         database.commit()

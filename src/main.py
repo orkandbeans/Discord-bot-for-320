@@ -1,8 +1,9 @@
 import asyncio
 
 import discord
+import datetime as dt
 from discord import app_commands
-from discord.ext import commands
+from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import Ranking
 from openAI import openAI
@@ -11,6 +12,8 @@ import random
 import os
 from osrsinfo import *
 from osrshighscores import *
+from geoguessr import geoguessr_game
+import giveaway as giveaway
 
 
 #Create bot declaration with intents
@@ -28,6 +31,8 @@ from jeopardy import *
 @bot.event
 async def on_ready():
     print("Bot is Up and Ready")
+    if not daily_giveaway.is_running():
+        daily_giveaway.start()
 
     #get the guild with all users in our specific discord and run an update on the members of the database
     server = discord.utils.get(bot.guilds)
@@ -55,7 +60,16 @@ async def on_ready():
     # else print exception
     except Exception as e:
         print(e)
-    
+
+@tasks.loop(hours=24)
+async def daily_giveaway():
+    giveaways = await giveaway.getGiveaways()
+    channels = giveaway.fetchAll()
+    msg = discord.Embed(title='Giveaways')
+    msg.description = giveaways[0]
+    for channel in channels:
+        await bot.get_channel(int(str(channel)[2:len(channel)-4])).send(embed=msg)
+
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
 # -----John's Commands-----
@@ -74,59 +88,124 @@ async def osrs_highscores_command(interaction: discord.Interaction, player_name:
         await interaction.followup.send(command_output[i])
 #--------------------------
 
+# -----Aaron's Commands-----
+#set up api key for server
 @bot.tree.command(name="aisetup", description = "Start setup process of openAI API for arnold bot for the server")
 async def aisetup(ctx: discord.Interaction):
-    await ctx.response.send_message("Okay! Creating a DM!")
-    dm = await ctx.user.create_dm()
     author = ctx.user
     server = ctx.guild.name
+    if (AI.fetchAPI(server) != None):
+        await ctx.response.send_message("This server already has an API key associated with it! if you wish to use another, please use \"remove\" or \"sudoremove\" followed by this command in order to use a different API")
+        return
+    await ctx.response.send_message("Okay! Creating a DM!")
+    dm = await ctx.user.create_dm()
     await dm.send(f"Hello {author}! You just used the setup command for openAI on the server {server}! Please provide the openAI API key to your wallet in order to make openAI commands available. you must provide the"
      + " API key in its entirety in this message. It will then be linked to this server.")
     APIkey = await bot.wait_for('message')
     AI.insertKey(APIkey.content, ctx.guild.id)
     await dm.send("Your key has been added to the database! You should now be able to use the Dalle and ChatGPT commands")
 
+#run the dalle command to generate an image
 @bot.tree.command(name = "dalle", description = "Give a prompt and let openAI generate an image")
 @app_commands.describe(prompt = "What prompt would you like to generate?")
-#async def dalle(ctx: discord.Interaction, prompt: str):
+@app_commands.describe(download = "Specify if you want this image sent and kept via download (specify True for yes, False for no)")
 async def dalle(ctx: discord.Interaction, prompt: str, download: bool):
     await ctx.response.send_message("Give us a few seconds to generate your image.")
     user = ctx.user.id
     server = ctx.guild.id
+    if (AI.fetchAPI(server) == None):
+        await ctx.channel.send("This server does not have an API key associated with it. Please use \"aisetup\" command in order to save an API key to this server")
+        return
     api = str(AI.fetchAPI(server))
     api = api[2:len(api)-3]
     data = AI.dalle.generate(prompt, api, download)
+    if (data == "ERROR CODE 1"):
+        await ctx.channel.send(f"""
+        <@{user}> your API key for this server is invalid.
+        We removed it from our database.
+        Please reuse \"aisetup\" with the correct API key.
+        Make sure the submission is exactly like the one provided in openAI
+        """)
+        return
+    if (data == "ERROR CODE 2"):
+        await ctx.channel.send(f"""
+        <@{user}> Your being rate limited for too many requests or you have hit your soft or hard limit for your API key.
+        In order to fix the latter, you must increase your limit for this month.
+        You can do so by following this link: https://platform.openai.com/account/billing/limits
+        """)
+        return
+    if (data == "ERROR CODE 3"):
+        await ctx.channel.send(f"""
+        <@{user}> The OpenAI site is having issues at the moment!
+        Please come back later!
+        """)
+        return
+    if (data == "ERROR CODE 4"):
+        await ctx.channel.send(f"""
+        <@{user}> The prompt given is against OpenAI terms of service and was rejected.
+        Please stay within openAI terms of service
+        """)
+        return
     if (not download):
         embed = discord.Embed()
         embed.set_image(url=data)
-        await ctx.channel.send(f"<@{user}> here's your image for prompt: {prompt}", embed=embed)
+        await ctx.channel.send(f"""
+        <@{user}> here's your image for prompt: {prompt}
+        """, embed=embed)
+        return
     else:
         with open("temp/dalle.png", 'rb') as image_file:
-            await ctx.channel.send(f"<@{user}> here's your image for prompt: {prompt}", file=discord.File(image_file, filename='dalle.png'))
+            await ctx.channel.send(f"""
+            <@{user}> here's your image for prompt: {prompt}
+            """, file=discord.File(image_file, filename='dalle.png'))
     os.remove("temp/dalle.png")
 
+#remove the api key from the database
 @bot.tree.command(name = "remove", description = "Remove the current API key from this server for OpenAI")
 async def remove(ctx: discord.Interaction):
     server = ctx.guild.id
     if ctx.permissions.administrator:
-        AI.removeKey(server)
-        await ctx.response.send_message("API key successfully removed!")
+        if AI.fetchAPI(server) == None:
+            await ctx.response.send_message("""
+            There is no API key associated with this server.
+            Remove rejected
+            """)
+        else:
+            AI.removeKey(server)
+            await ctx.response.send_message("""
+            API key successfully removed!
+            """)
     else:
-        await ctx.response.send_message("You are not an admin of this server. If you own the API Key, you must use superRemove")
+        await ctx.response.send_message("""
+        You are not an admin of this server.
+        If you own the API Key, you must use superRemove
+        """)
 
-#@bot.tree.command(name = "sudoremove", description = "Remove an API key from all servers")
-#async def sudoremove(ctx: discord.Interaction):
-#    await ctx.response.send_message("Okay! Creating a DM!")
-#    dm = await ctx.user.create_dm()
-#    author = ctx.user
-#    server = ctx.guild.name
-#    await dm.send(f"Hello {author}! You just used the superRemove command for openAI on the server {server}! Please provide the openAI API key to your wallet in order to remove your API key from the database. you must provide the"
-#     + " API key in its entirety in this message. It will then be removed from any linked servers.")
-#    APIkey = await bot.wait_for('message')
-#    AI.superRemoveKey(APIkey)
-#    await dm.send("Your key has been removed from the database. No servers should be able to use your key now")
+#superremove all api keys and server links
+@bot.tree.command(name = "sudoremove", description = "Remove an API key from all servers")
+async def sudoremove(ctx: discord.Interaction):
+    await ctx.response.send_message("""
+    Okay!
+    Creating a DM!
+    """)
+    dm = await ctx.user.create_dm()
+    author = ctx.user
+    server = ctx.guild.id
+    await dm.send(f"""
+    Hello {author}!
+    You just used the superRemove command for openAI on the server {server}!
+    Please provide the openAI API key to your wallet in order to remove your API key from the database.
+    you must provide the API key in its entirety in this message.
+    It will then be removed from any linked servers.
+    """)
+    APIkey = await bot.wait_for('message')
+    AI.superRemoveKey(APIkey)
+    await dm.send("""
+    Your key has been removed from the database.
+    No servers should be able to use your key now
+    """)
 
-
+#generate text from chatgpt from a prompt
 @bot.tree.command(name = "chat", description = "Give a prompt and let openAI generate text")
 @app_commands.describe(prompt = "What prompt would you like to generate?")
 @app_commands.describe(size = "What size do you want your prompt to return")
@@ -134,10 +213,72 @@ async def dalle(ctx: discord.Interaction, prompt: str, size: int):
     await ctx.response.send_message("Give us a few seconds to generate your text.")
     user = ctx.user.id
     server = ctx.guild.id
+    if (AI.fetchAPI(server) == None):
+        await ctx.channel.send(f"""
+        <@{user}> Your being rate limited for too many requests or you have hit your soft or hard limit for your API key.
+        In order to fix the latter, you must increase your limit for this month.
+        You can do so by following this link: https://platform.openai.com/account/billing/limits
+        """)
+        return
     api = str(AI.fetchAPI(server))
     api = api[2:len(api)-3]
     data = AI.chatGPT.generate(prompt, size, api)
-    await ctx.channel.send(f"<@{user}> here's your text for prompt: {prompt} : {data} ")
+    if (data == "ERROR CODE 1"):
+        await ctx.channel.send(f"""
+        <@{user}> Your being rate limited for too many requests or you have hit your soft or hard limit for your API key.
+        In order to fix the latter, you must increase your limit for this month.
+        You can do so by following this link: https://platform.openai.com/account/billing/limits
+        """)
+        return
+    if (data == "ERROR CODE 2"):
+        await ctx.channel.send(f"<@{user}> Your being rate limited for too many requests or you have hit your soft or hard limit for your API key. In order to fix the latter, you must increase your limit for this month. You can do so by following this link: https://platform.openai.com/account/billing/limits")
+        return
+    if (data == "ERROR CODE 3"):
+        await ctx.channel.send(f"""
+        <@{user}> The OpenAI site is having issues at the moment!
+        Please come back later!
+        """)
+        return
+    if (data == "ERROR CODE 4"):
+        await ctx.channel.send(f"""
+        <@{user}> The prompt given is against OpenAI terms of service and was rejected.
+        Please stay within openAI terms of service
+        """)
+    await ctx.channel.send(f"""
+    <@{user}> here's your text for prompt: {prompt} : {data}
+    """)
+
+#set up channel for daily giveaways
+@bot.tree.command(name = "setupgiveaway", description = "Give a channel to receive news about giveaways")
+@app_commands.describe(channel = "What channel would you like to use for your giveaways?")
+async def setupgiveaway(ctx: discord.Interaction, channel: discord.TextChannel):
+    author = ctx.user
+    server = ctx.guild.id
+    if ctx.permissions.administrator != True:
+        await ctx.response.send_message("You are not an admin of this server and can not set up a giveaway channel")
+        return
+    if (giveaway.fetchGiveaway(server) != None):
+        await ctx.response.send_message("This server already has a channel set up for giveaways. In order to set up a new one, please use the \"removegive\" followed by this command in order to use a different channel")
+        return
+    else:
+        giveaway.setGiveaway(server, channel.id)
+        await ctx.response.send_message("This server now has a giveaway channel that will be updated every day at 12:00PM Pacific Standard")
+
+#remove channel for daily giveaways
+@bot.tree.command(name = "removegiveaway", description = "remove the giveaway channel for this server")
+async def removegiveaway(ctx: discord.Interaction):
+    author = ctx.user
+    server = ctx.guild.id
+    if ctx.permissions.administrator != True:
+        await ctx.response.send_message("You are not an admin of this server and can not remove a giveaway channel")
+        return
+    if (giveaway.fetchGiveaway(server) == None):
+        await ctx.response.send_message("This server does not have a giveaway channel associated with it already")
+        return
+    else:
+        giveaway.removeGiveaway(server)
+        await ctx.response.send_message("Giveaway channel has successfully been deleted. No more updates will be given")
+# -------------------------
 
 @bot.event
 async def on_message(message):
@@ -160,18 +301,18 @@ async def on_message_edit(before,after):
         Brian.reduceScore(member,before.content)
         Brian.updateScore(member,after.content)
         await updateRoles(member)
-    
+
 async def searchMessages(channel):
     async for message in channel.history(limit=None):
         if message.author.bot:
             continue
         result = Brian.historyCheck(message.author)
-       
+
         if result == 1:
             continue
         Brian.updateScore(message.author,message.content)
         await updateRoles(message.author)
-    
+
 async def updateRoles(member):
     result = Brian.getMRoles(member)
     hasRoles = []
@@ -187,7 +328,7 @@ async def updateRoles(member):
                 await member.add_roles(this)
             else:
                 print(role + " role does not exist.")
-    
+
 
 @bot.event
 async def on_member_ban(guild, member):
@@ -210,7 +351,7 @@ async def listranks(ctx: discord.Interaction):
             message = message + f"{i}. {member[1]} with a score of {member[0]}\n"
             i+=1
         await ctx.response.send_message(message)
-            
+
 
 @bot.tree.command(name="newrole")
 async def newrole(ctx: discord.Interaction,role: str,score: int):
@@ -248,7 +389,7 @@ async def removerole(ctx: discord.Interaction,role: str, member: str):
 @bot.tree.command(name="getroles")
 async def getroles(ctx: discord.Interaction,member: str):
     result = Brian.getMRoles(member)
-    
+
     if result == []:
         await ctx.response.send_message(f"{member} does not have any roles in the database.")
     else:
@@ -322,7 +463,7 @@ async def sound_request(ctx, message):
 @bot.command(name="geoguessr")
 async def geoguessr(ctx):
     await geoguessr_game(bot,ctx)
-    
+
 #-------------------------------------------------------------------
 
 #load the key

@@ -112,10 +112,9 @@ def testResponseChat():
         print("Test Failed")
     print("Test successful")
 
-#test to see if dalle will work after retrieving an API key from our database (Covers Dalle Classes generate method and fetchAPI fetchAPI method) 
+#test to see if dalle will work after retrieving an API key from our database (Covers Dalle Classes generate method and fetchAPI fetchAPI method)
 def testDalleAfterRetrieval():
     print("Testing Dalle with Database for key")
-    AI.insertKey(APIkey, 1320440213)
     fetchedAPI = AI.fetchAPI(1320440213)
     try:
         url = AI.dalle.generate("A house on the beach" , fetchedAPI, False)
@@ -126,7 +125,6 @@ def testDalleAfterRetrieval():
 #test to see if chatGPT will work after retrieving an API key from our database. (Covers chatGPT Classes generate method and fetchAPI method)
 def testChatGPTAfterRetrieval():
     print("Testing chatGPT with Database for key")
-    AI.insertKey(APIkey, 69804325834)
     fetchedAPI = AI.fetchAPI(69804325834)
     try:
         url = AI.chatGPT.generate("Write a poem", 100 , fetchedAPI)
