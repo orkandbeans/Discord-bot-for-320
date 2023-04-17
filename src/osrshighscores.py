@@ -6,7 +6,7 @@ import requests # API call package
 import mwparserfromhell # Full Name - Media Wiki Parser from Hell
 import unittest
 
-def osrshighscores(player_name: str, second_player_name: str, game_mode: str, activity: int, metric: str):
+def osrshighscores(player_name: str, second_player_name: str, game_mode: str, activity: str, metric: str):
 
     mode = game_mode.lower()
     player_one = player_name.lower().replace(" ", "_")
@@ -20,24 +20,25 @@ def osrshighscores(player_name: str, second_player_name: str, game_mode: str, ac
         player_one_url = constructrequest(player_one, mode)
         player_one_scores = requests.get(player_one_url)
         # check api response code
-        # parse text response
+        parsed_player_one = parsetextresponse(player_one_scores.text)
 
     if second_player_name != "":
-        #send request for and store player 2 scores
+    #send request for and store player 2 scores
         player_two_url = constructrequest(player_two, mode)
         player_two_scores = requests.get(player_two_url)
         isCompareRequest = True
         #check api response code
-        # parse text response
+        parsed_player_two = parsetextresponse(player_two_scores.text)
     else:
         isCompareRequest = False
 
     if isCompareRequest == True:
-        # perform calculations
-        # construct and return comparison output message
-        pass
-    # construct and return single output message
-    return
+        compared_scores = comparescores(parsed_player_one, parsed_player_two)
+        output = constructcomparisonoutput(parsed_player_one, parsed_player_two, compared_scores)
+    else:
+        output = constructsingleoutput(parsed_player_one)
+
+    return output
     
 
     # construct and send request
@@ -46,26 +47,27 @@ def constructrequest(player_name: str, game_mode: str):
     if game_mode == "":
         #normal highscores
         mode = ""
-    elif (game_mode.find('hard') != -1 | game_mode == "hcim" | game_mode == "hc"):
+    elif ((game_mode.find('hard') != -1) | (game_mode == "hcim") | (game_mode == "hc")):
         mode = "_hardcore_ironman"
-    elif (game_mode.find('ult') != -1 | game_mode == "uim"):
+    elif ((game_mode.find('ult') != -1) | (game_mode == "uim")):
         mode = "_ultimate"
-    elif (game_mode.find('iron') != -1 | game_mode == "im"):
+    elif ((game_mode.find('iron') != -1) | (game_mode == "im")):
         mode = "_ironman"
     else:
         return("error")
 
-    return("https://secure.runescape.com/m=hiscore_oldschool" + mode + "/index_lite.ws?" + player_name)
+    return("https://secure.runescape.com/m=hiscore_oldschool" + mode + "/index_lite.ws?player=" + player_name)
 
 def parsetextresponse(api_response: str):
 
     #list of keys for pairing player scores to activities
-    activity_list = ["Overall", "Attack", "Defence", "Strength", "Hitpoints",
+    skill_list = ["Overall", "Attack", "Defence", "Strength", "Hitpoints",
                     "Ranged", "Prayer", "Magic", "Cooking", "Woodcutting",
-                    "Fletching", "Fishing", "Firemaking", "Crafting", "Smithing"
+                    "Fletching", "Fishing", "Firemaking", "Crafting", "Smithing", 
                     "Mining", "Herblore", "Agility", "Thieving", "Slayer", 
-                    "Farming", "Runecrafting", "Hunter", "Construction", 
-                    "League Points", "Bounty Hunter - Hunter", "Bounty Hunter - Rogue", "Clue Scrolls (all)", "Clue Scrolls (beginner)",
+                    "Farming", "Runecrafting", "Hunter", "Construction"]
+     
+    activity_list = ["League Points", "Bounty Hunter - Hunter", "Bounty Hunter - Rogue", "Clue Scrolls (all)", "Clue Scrolls (beginner)",
                     "Clue Scrolls (easy)", "Clue Scrolls (medium)", "Clue Scrolls (hard)", "Clue Scrolls (elite)", "Clue Scrolls (master)",
                     "LMS - Rank", "PvP, Arena - Rank", "Soul Wars Zeal", "Rifts closed", "Abyssal Sire",
                     "Alchemical Hydra", "Artio", "Barrows Chests", "Bryophyta", "Callisto",
@@ -80,21 +82,48 @@ def parsetextresponse(api_response: str):
                     "TzKal-Zuk", "TzTok-Jad", "Venenatis", "Vet\'ion", "Vorkath",
                     "Wintertodt", "Zalcano", "Zulrah",]
     
-        # check for activity specification: defaults to :all: can specify any of 48 activities or 24 skills
-        # check for metric specification: defaults to :all: can specify rank, level, or experience
-        # parse returned scores into arrays and match up to blueprint array (scores of -1 are unranked)
-        # send requested data to smaller array
-    pass
+    api_response = api_response.replace('\n', ',').replace('-1', 'unranked')
+    raw_player_scores = api_response.split(",")
 
-def comparescores():
+    formatted_player_scores = []
+    
+    i = 0
+
+    for x in skill_list:
+        skill = [x, raw_player_scores[i], raw_player_scores[i+1], raw_player_scores[i+2]]
+        formatted_player_scores.append(skill)
+        i+= 3
+    
+    for x in activity_list:
+        activity = [x, raw_player_scores[i], raw_player_scores[i+1]]
+        formatted_player_scores.append(activity)
+        i+=2
+
+    return formatted_player_scores
+
+def comparescores(player_one_scores_list: list, player_two_scores_list: list):
     # if a second player is specified find the difference
     pass
 
-def constructsingleoutput():
-    #one player specified
-    pass
+def constructsingleoutput(player_one_scores_list: list):
+    output_list = []
 
-def constructcomparisonoutput():
+    j = 0
+    output_list.append("-----------------------------------------------------------------------------------------------------\n")
+    activity_index = 0
+    for i in player_one_scores_list:
+        if activity_index < 24:
+            output_list[j] += i[0] + ": " + i[1] + ", " + i[2] + ", " + i[3] + "\n" 
+        else:
+            output_list[j] += i[0] + ": " + i[1] + ", " + i[2] + "\n"
+        activity_index += 1
+        if(len(output_list[j]) > 1500):
+            j += 1
+            output_list.append("")
+    output_list[j] += "-----------------------------------------------------------------------------------------------------\n"
+    return output_list
+
+def constructcomparisonoutput(player_one_scores: list, player_two_scores_list: list, score_difference_list: list):
     #two players specified
     pass
 
@@ -103,9 +132,10 @@ def errormessage():
     pass
 
 def main():
-    my_scores = requests.get('https://secure.runescape.com/m=hiscore_oldschool/index_lite.ws?player=pvm_gohone').text
+    my_scores = osrshighscores("pvm_gohone", "", "iron", "", "")
                              
     print(type(my_scores))
+    print(my_scores)
 
 if __name__ == "__main__":
     main()
