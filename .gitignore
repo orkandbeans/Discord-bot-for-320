@@ -5,3 +5,5 @@
 ./venv/*
 ./venv
 *.env
+dbFT.py
+testbase.db

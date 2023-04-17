@@ -1,15 +1,20 @@
 #Name: John Gregerson --- Course: CS320 --- Assignment: MainProject Feature 1: osrs_info --- Date: 02/05/2023
 
-#DESCRIPTION:
+#DESCRIPTION: This feature uses the media wiki API to pull page info for an entity named in the discord commands first argument.
+# If an entity name returns multiple results a list of results is displayed tot he user for them to specify in a 
+# subsequent command using the second optional argument "search_option"
+# If a single result is returned or a search_option is given page contents is parsed using mwparserfromhell and returned to the user.
+
 import requests # API call package
 import mwparserfromhell # Full Name - Media Wiki Parser from Hell
+import unittest
 
 # main function for osrsinfo command, processes program flow
 def osrsinfo(entity_name: str, search_option: int):
     BASE_URL = 'https://oldschool.runescape.wiki/api.php?'
     CUSTOM_AGENT = { 'User-Agent': 'Arnoldbot_OSRS_lookup', 'From': 'john0893@gmail.com' }
 
-    control = controller(model(), View())
+    control = controller(model(), view())
 
     #set request baselines
     control.set_entity_name(entity_name)
@@ -52,7 +57,7 @@ def osrsinfo(entity_name: str, search_option: int):
     else:                                                           #zero or negative result count, return no results
         control.set_no_results_output()
 
-    print(control.model.wiki_templates)
+    #print(control.model.wiki_templates)
 
     return control.view.output
 
@@ -152,7 +157,7 @@ class controller:
 
 
 #Defines how to send/recieve input/output for user
-class View:
+class view:
     def __init__(self):
         self.output = None
         self.formatted_search_output = []
@@ -196,6 +201,13 @@ class View:
                     self.formatted_single_page_output.append("")
         self.output = self.formatted_single_page_output
 
+def main():
+    #if running command on it's own edit osrsinfo values below to test
+    my_scores = osrsinfo("Abyssal_Whip", 1)
+                             
+    print(type(my_scores))
+    print(my_scores)
 
-    def format_image_output(self):
-        pass
+if __name__ == "__main__":
+    #allows the command to be run on it's own
+    main()
