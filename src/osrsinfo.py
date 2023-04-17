@@ -200,3 +200,14 @@ class view:
                     j += 1
                     self.formatted_single_page_output.append("")
         self.output = self.formatted_single_page_output
+
+def main():
+    #if running command on it's own edit osrsinfo values below to test
+    my_scores = osrsinfo("Abyssal_Whip", 1)
+                             
+    print(type(my_scores))
+    print(my_scores)
+
+if __name__ == "__main__":
+    #allows the command to be run on it's own
+    main()

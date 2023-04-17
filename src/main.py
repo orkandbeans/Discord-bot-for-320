@@ -73,6 +73,8 @@ async def daily_giveaway():
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
 # -----John's Commands-----
+# osrsinfo pulls and returns information from the osrs wiki
+# returning a list of output messages to accomodate discords 2000 character limit.
 @bot.tree.command(name="osrsinfo")
 async def osrs_info_command(interaction: discord.Interaction, entity_name: str, search_option: int = 0):
     command_output = osrsinfo(entity_name, search_option)
@@ -80,9 +82,11 @@ async def osrs_info_command(interaction: discord.Interaction, entity_name: str, 
     for i in range(1, len(command_output)):
         await interaction.followup.send(command_output[i])
 
+# osrshighscores pulls player information from the osrs highscores api
+# returning a list of output messages to accomodate discords 2000 character limit.
 @bot.tree.command(name="osrshighscores")
-async def osrs_highscores_command(interaction: discord.Interaction, player_name: str, second_player_name: str = "", game_mode: str = "", activity: str = "", metric: str = ""):
-    command_output = osrsinfo(player_name, search_option)
+async def osrs_highscores_command(interaction: discord.Interaction, player_name: str, second_player_name: str = "", game_mode: str = ""):
+    command_output = osrshighscores(player_name, second_player_name, game_mode)
     await interaction.response.send_message(command_output[0])
     for i in range(1, len(command_output)):
         await interaction.followup.send(command_output[i])
