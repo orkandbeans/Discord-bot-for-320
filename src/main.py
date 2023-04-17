@@ -1,23 +1,26 @@
 import asyncio
-
 import discord
 from discord import app_commands
 from discord.ext import commands
+from discord import InteractionResponse
 from dotenv import load_dotenv
-import Ranking
-from openAI import openAI
-import SoundBoard
+#import Ranking
+#from openAI import openAI
+from discord.ui import Button, view
+from SoundBoard import Board
+import wavelink
+import youtube_dl
 import random
 import os
-from lorelookup import *
-from osrsinfo import *
+#from lorelookup import *
+#from osrsinfo import *
 
 
 #Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
 #Create BRIAN declaration for ranking
-Brian = Ranking.BRIAN()
-AI = openAI()
+#Brian = Ranking.BRIAN()
+#AI = openAI()
 
 
 #when bot is logged in
@@ -28,7 +31,7 @@ from jeopardy import *
 @bot.event
 async def on_ready():
     print("Bot is Up and Ready")
-
+"""
     #get the guild with all users in our specific discord and run an update on the members of the database
     memberList = bot.get_guild(1065019755628613682).members
     Brian.botCommand("updateMembers",memberList,"")
@@ -142,17 +145,22 @@ async def jeopardy(ctx, arg):
         #if GameBoard.gameover is True: break
     await ctx.send("You earned " + str(money))
     await ctx.send("Thanks for playing!")
+"""
 
 @bot.command(name="soundboard", pass_context=True)
-async def sound_request(ctx, message):
-    speaker = ctx.author
-    await SoundBoard.Sound.connect(speaker, message)
+async def soundboard(ctx):
+    if ctx.author.voice is None:
+        await ctx.reply("please join a voice chat and try again")
+        return
+    # voice channel of user
+    voice_channel = ctx.author.voice.channel
+    # connect to channel
+    await voice_channel.connect()
 
-@bot.command(name=“geoguessr”)
-async def geoguessr(ctx):
-    await geoguessr_game(bot,ctx)
-    
-#-------------------------------------------------------------------
+    my_board = Board(ctx)
+    await ctx.reply(view=my_board.menu)
+
+#-------------------------------------------------------------------#
 
 #load the key
 load_dotenv()
