@@ -1,4 +1,5 @@
 import asyncio
+
 import discord
 import datetime as dt
 from discord import app_commands
@@ -6,10 +7,7 @@ from discord.ext import commands, tasks
 from dotenv import load_dotenv
 import Ranking
 from openAI import openAI
-from discord.ui import Button, view
-from SoundBoard import Board
-import wavelink
-import youtube_dl
+import SoundBoard
 import random
 import os
 from osrsinfo import *
@@ -21,8 +19,8 @@ import giveaway as giveaway
 #Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
 #Create BRIAN declaration for ranking
-#Brian = Ranking.BRIAN()
-#AI = openAI()
+Brian = Ranking.BRIAN()
+AI = openAI()
 
 
 #when bot is logged in
@@ -461,6 +459,29 @@ async def jeopardy(ctx, arg):
     await ctx.send("You earned " + str(money))
     await ctx.send("Thanks for playing!")
 
+@bot.command(name="soundboard", pass_context=True)
+async def sound_request(ctx, message):
+    speaker = ctx.author
+    await SoundBoard.Sound.connect(speaker, message)
+
+@bot.command(name="geoguessr")
+async def geoguessr(ctx):
+    await geoguessr_game(bot,ctx)
+
+@bot.command(name="soundboard", pass_context=True)
+async def soundboard(ctx):
+    if ctx.author.voice is None:
+        await ctx.reply("please join a voice chat and try again")
+        return
+    # voice channel of user
+    voice_channel = ctx.author.voice.channel
+    # connect to channel
+    await voice_channel.connect()
+
+    my_board = SoundBoard.Board(ctx)
+    await ctx.reply(view=my_board.menu)
+
+#-------------------------------------------------------------------
 
 #load the key
 load_dotenv()
