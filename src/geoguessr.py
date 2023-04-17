@@ -4,7 +4,7 @@ import random
 import requests
 import discord
 from discord.ext import commands
-from discord.components import DiscordComponents, Button, ButtonStyle, ComponentContext
+from discord import Button, ButtonStyle
 import os
 import io
 import asyncio
@@ -18,53 +18,66 @@ api_key = ''
 
 class G_game:
 
-    def __init__(self):
+    def __init__(self, rounds, max_time):
         self.cur_location = []
         self.round_num = 0
+        self.num_rounds = rounds
+        self.max_time = max_time
         
     def load_states(self):
         location_list = []
+        
         for state in states:
             location_list.append(Location(state["name"], state["cities"]))
         return location_list
     
-    async def start_game(self, num_rounds, bot, message):
+    async def start_game(self, bot, message, player_list):
+        
         #load state information
         location_list = self.load_states()
         
-        player = Player(message.author.name, 50)
+        await message.channel.send("Starting in...")
+        await count_down(message)
         
-        #await message.channel.send("Starting in...")
-        #await count_down(message)
-        
-        while self.round_num < num_rounds:
+        while self.round_num < self.num_rounds:
             
-            self.choose_location(location_list)
-            
-            image = self.get_image()
-            
-            #await self.display_image(image, message)
-            
-            player_guess, time_taken = await self.get_player_guess(bot, message)
-            
-            if_correct = await self.check_player_guess(player_guess, message, player)
-            
-            distance = await self.calc_distance(player_guess)
-            
-            time_to_guess = 0
-            
-            await self.calc_score(time_taken, distance, player)
-            
-            await self.end_round(message, if_correct, distance, player)
+            for player in player_list:
+                self.choose_location(location_list)
+                
+                await self.warn_player(player, message)
+
+                image = self.get_image()
+
+                await self.display_image(image, message)
+
+                player_guess, time_taken = await self.get_player_guess(bot, message)
+
+                if_correct = await self.check_player_guess(player_guess, message, player)
+
+                if time_taken < self.max_time:
+                    distance = await self.calc_distance(player_guess)                  
+                else:
+                    distance = 5859
+                    
+                await self.calc_score(time_taken, distance, player)
+
+                await self.end_round(message, if_correct, distance, player)
             
             self.round_num += 1
+        
+        for player in player_list:
+            await self.display_results(player, message)
             
-        await self.display_results(player, message)
         return
     
     def choose_location(self, location_list):
         self.cur_location = random.choice(location_list)
         return
+    
+    async def warn_player(self, player, message):
+        await message.channel.send(f'{player.name}\'s turn!')
+        return
+        
     
     def get_image(self):
         random.seed(time.time())
@@ -98,20 +111,21 @@ class G_game:
         def check_user(new_message):
             return new_message.author == message.author and new_message.channel == message.channel
     
-        time_to_guess = 60.0
         start_time = time.time()
         
         guess = "z"
         try:
-            guess = await asyncio.wait_for(bot.wait_for('message', check=check_user), timeout=time_to_guess)
+            guess = await asyncio.wait_for(bot.wait_for('message', check=check_user), timeout=self.max_time)
             end_time = time.time()
             time_taken = end_time - start_time
             input_value = guess.content
             return input_value, time_taken
         except asyncio.TimeoutError:
+            end_time = time.time()
+            time_taken = end_time - start_time
             await message.channel.send("Times up!")
             time.sleep(1)
-            return guess
+            return guess, time_taken
     
     #check the players guess against real location
     async def check_player_guess(self, player_guess, message, player): 
@@ -281,6 +295,7 @@ async def get_player_num(message, bot):
         except ValueError:
             await message.channel.send(f'{players.content} is not a number')
             await message.channel.send('How many people would like to play?')
+            
     return num_players
 
 async def get_players(num_players, message, bot):
@@ -317,115 +332,143 @@ async def count_down(message):
     time.sleep(1)
     return
 
-async def menu(bot, message):
-    DiscordComponents(bot)
-    row = [
-        Button(style=ButtonStyle.blue, label="Single player", custom_id="single-player"),
-        Button(style=ButtonStyle.blue, label="Multi player", custom_id="multi-player"),
-        Button(style=ButtonStyle.grey, label="Settings", custom_id="settings"),
-        Button(style=ButtonStyle.grey, label="Rules", custom_id="rules")
-    ]
+class menuButtons(discord.ui.View):
+    def __init__(self, bot, message):
+        super().__init__()
+        self.player_list = []
+        self.rounds = 5
+        self.time = 60
+        self.bot = bot
+        self.message = message
+        self.end = False
+    
+    @discord.ui.button(label="Single Player",style=discord.ButtonStyle.primary, custom_id="1")
+    async def button_callback1(self, button, interaction):
+        player = Player(self.message.author.name, 50)
+        self.player_list.append(player)
+        self.end = True
+        print(self.end)
+        
+    @discord.ui.button(label="Multi-Player", style=discord.ButtonStyle.secondary, custom_id="2")
+    async def button_callback2(self, button, interaction):
+        num_players = await get_player_num(self.message, self.bot)
+        self.player_list = await get_players(num_players, self.message, self.bot)
+        self.end = True
+        
+    @discord.ui.button(label="Settings", style=discord.ButtonStyle.success, custom_id="3")
+    async def button_callback3(self, button, interaction):
+        #a couple adjustable settings for the game
+        #- time to guess must be > 0 and <= 180
+        #- number of rounds must be > 0 and <= 50
 
+        #make sure we are talking to user who issued "Geoguessr" command
+        def check_user(new_message):
+            return new_message.author == self.message.author and new_message.channel == self.message.channel
+
+        await self.message.channel.send('Which setting would you like to change?')
+        await self.message.channel.send('1: Number of rounds')
+        await self.message.channel.send('2: Number of seconds to guess')
+        await self.message.channel.send('-Message the number that appears before the setting you would like to change-')
+
+        mess = await self.bot.wait_for('message', check=check_user)
+        rule_to_change = int(mess.content)
+
+        num_rounds = 5
+        time_to_guess = 60
+
+        if rule_to_change == 1:
+            await self.message.channel.send('How many rounds would you like to play?')
+            await self.message.channel.send('-Please choose between 1 and 50-')
+
+            mess = await self.bot.wait_for('message', check=check_user)
+            num_rounds = int(mess.content)
+            
+            passflag = True
+            
+            while passflag:
+                if 1 > num_rounds or 50 < num_rounds:
+                    await self.message.channel.send('-Please choose between 1 and 50 rounds-')
+                    mess = await self.bot.wait_for('message', check=check_user)
+                    num_rounds = int(mess.content)
+                else:
+                    passflag = False
+            
+            self.rounds = num_rounds
+            
+        elif rule_to_change == 2:
+            await self.message.channel.send('How much time would you like to guess?')
+            await self.message.channel.send('-Please choose between 1 and 180 seconds-')
+
+            mess = await self.bot.wait_for('message', check=check_user)
+            time_to_guess = int(mess.content)
+            
+            passflag = True
+            
+            while passflag:
+                if 1 > time_to_guess or 180 < time_to_guess:
+                    await self.message.channel.send('-Please choose between 1 and 180 seconds-')
+                    mess = await self.bot.wait_for('message', check=check_user)
+                    time_to_guess = int(mess.content)
+                else:
+                    passflag = False
+                    
+            self.time = time_to_guess
+        else:
+            await self.message.channel.send('That is not a setting you can change')
+            
+    @discord.ui.button(label="Rules", style=discord.ButtonStyle.danger, custom_id="4")
+    async def button_callback4(self, button, interaction):
+        #explain rules to player
+        #make sure we are talking to user who issued "Geoguessr" command
+        def check_user(new_message):
+            return new_message.author == self.message.author and new_message.channel == self.message.channel
+
+        await self.message.channel.send('How it works:')
+        time.sleep(0.5)
+        await self.message.channel.send('Each round you will be given a picture depicting a random location within the United States.')
+        await self.message.channel.send('You will be given 60 seconds to view the image and guess which state the image was taken in.')
+        await self.message.channel.send('After guessing, the answer will be revealed.')
+        await self.message.channel.send('Your score is 50/100 initially, and will raise or lower depending on how close your guess was,')
+        await self.message.channel.send('how quickly you answered, and your previous score')
+        await self.message.channel.send('----------------------------------------------------')
+
+
+
+async def menu(bot, message):
+
+    buttons = menuButtons(bot, message)
     await message.channel.send('Welcome to Geoguessr!')
     time.sleep(1)
     
     start_game_flag = False
+    flag = False
+    print(buttons.end)
     
-    while not start_game_flag:
-        message = await message.channel.send(content="---------------------", components=[row])
-
+    but = await message.channel.send('Options:', view=buttons)
+    while not flag:
+        
+        flag = buttons.end
         # Wait for a button to be pressed
-        button: ComponentContext = await bot.wait_for("button_click")
-
-        # Call the appropriate function based on the custom_id of the button that was pressed
-        if button.custom_id == "single-player":
-            player_list = await handle_single_player(message)
-            start_game_flag = True
-        elif button.custom_id == "multi-player":
-            num_players = await get_player_num(message, bot)
-            player_list = await get_players(num_players, message, bot)
-            start_game_flag = True
-        elif button.custom_id == "settings":
-            num_rounds, max_time = await handle_settings(message, bot)
-        elif button.custom_id == "rules":
-            await handle_rules(message, bot)
-
+        try:
+            button = await bot.wait_for("button_click", timeout=2)
+        except asyncio.TimeoutError:
+            pass
+        
+    await but.delete()
+    
+    player_list = buttons.player_list
+    num_rounds = buttons.rounds
+    max_time = buttons.time
+    
     return player_list, num_rounds, max_time
-
-async def handle_single_player(message):
-    #single player game
-    player_list = []
-    player = Player(message.author.name, 50)
-    player_list.append(player)
-    return player_list
-
-async def handle_settings(message, bot):
-    #a couple adjustable settings for the game
-    #- time to guess must be > 0 and <= 180
-    #- number of rounds must be > 0 and <= 50
-    
-    #make sure we are talking to user who issued "Geoguessr" command
-    def check_user(new_message):
-        return new_message.author == message.author and new_message.channel == message.channel
-    
-    await message.channel.send('Which setting would you like to change?')
-    await message.channel.send('-Message the number that appears before the setting you would like to change-')
-    
-    message = await bot.wait_for('message', check=check_user)
-    rule_to_change = int(message.content)
-    
-    num_rounds = 5
-    time_to_guess = 60
-    
-    if rule_to_change == 0:
-        await message.channel.send('How many rounds would you like to play?')
-        await message.channel.send('-Please choose between 1 and 50-')
-        
-        message = await bot.wait_for('message', check=check_user)
-        num_rounds = int(message.content)
-    elif rule_to_change == 1:
-        await message.channel.send('How much time would you like to guess?')
-        await message.channel.send('-Please choose between 1 and 180 seconds-')
-        
-        message = await bot.wait_for('message', check=check_user)
-        time_to_guess = int(message.content)
-    else:
-        await message.channel.send('That is not a setting you can change')
-    
-    return num_rounds, time_to_guess
-
-async def handle_rules(message, bot):
-    #explain rules to player
-    #make sure we are talking to user who issued "Geoguessr" command
-    def check_user(new_message):
-        return new_message.author == message.author and new_message.channel == message.channel
-    
-    await message.channel.send('How it works:')
-    time.sleep(0.5)
-    await message.channel.send('Each round you will be given a picture depicting a random location within the United States.')
-    await message.channel.send('You will be given 60 seconds to view the image and guess which state the image was taken in.')
-    await message.channel.send('After guessing, the answer will be revealed.')
-    await message.channel.send('Your score is 50/100 initially, and will raise or lower depending on how close your guess was,')
-    await message.channel.send('how quickly you answered, and your previous score')
-    await message.channel.send('-Send any message to acknowledge the rules-')
-    
-    player_ack_rules = await bot.wait_for('message', check=check_user)
-    
-    return
 
 async def geoguessr_game(bot, message):
     
-    #await introduce_user(message, bot)
-            
-    #num_rounds = await get_num_rounds(message, bot)
-    num_rounds = 3
-            
-    #num_players = await get_player_num(message, bot)
-    
-    #players = await get_players(num_players, message, bot)
+    player_list, num_rounds, max_time = await menu(bot, message)
       
-    game = G_game()
-    await game.start_game(num_rounds, bot, message)  
+    game = G_game(num_rounds, max_time)
+    
+    await game.start_game(bot, message, player_list)  
     
     return       
        
