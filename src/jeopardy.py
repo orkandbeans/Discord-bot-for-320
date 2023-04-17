@@ -70,20 +70,23 @@ class JeopardyData:
         count = len(rows)
         return count, rows
     def search_questions(self, category, value, game_id):
-        cursor = self.database.execute("SELECT * FROM Games WHERE Game_id=? AND category=? AND value=? AND chosen=1", (game_id, category, value))
+        cursor = self.database.execute("SELECT * FROM Games WHERE Game_id=? AND category=? AND value=? AND chosen=1", (int(game_id), str(category), int(value)))
         result = cursor.fetchall()
         if result:
-            self.database.execute("UPDATE Games SET chosen = 0 WHERE Game_id=? AND category=? AND value=?", (game_id,category,value))
+            self.database.execute("UPDATE Games SET chosen = 0 WHERE Game_id=? AND category=? AND value=?", (int(game_id),str(category),int(value)))
             return result
         else:
             return []
-
+    def get_game_categories(self, game_id):
+        cursor = self.database.execute("SELECT DISTINCT category FROM Games WHERE Game_id=?", (game_id,))
+        result = cursor.fetchall()
+        return result
     def get_table_data(self, game_id):
 
         cursor = self.database.execute("SELECT category, value FROM Games WHERE chosen = 0 AND Game_id=?", (game_id,))
         result = cursor.fetchall()
-        print("RESULTS")
-        print(result)
+        #print("RESULTS")
+        #print(result)
         return result
     def check_game_state(self, game_id):
 
@@ -208,6 +211,8 @@ class GameStart:
                         question_id += 1
                         #print(category, value, question, answer)
                         myjeopardy.insert_questions(category, value, question, clean_answer, run, category_id, question_id)
+            print("MYSELECTCAT")
+            print(myselectcategory)
             return (myselectcategory)
     def pullquestion(category, value):  #return the question that the user wanted
         with open("jeopardydata.json", "r") as file:
@@ -343,7 +348,7 @@ class Input:
                 await asyncio.sleep(1)
                 await usermsg.delete()
                 categoryusermsg, valueusermsg = usermsg.content.split("# ")  # user must type "Category# Value"
-                botmessageupdate = GameBoard.updatetable(output, categoryusermsg, int(valueusermsg), myjeopardy, run)
+                botmessageupdate = GameBoard.updatetable(output, myjeopardy, run)
                 question = GameStart.pullquestion(categoryusermsg, valueusermsg)
                 myquestion = await ctx.send(question["question"])  # SEND QUESTION
                 print("Answer: " + question["answer"])
@@ -401,7 +406,7 @@ class Input:
             view = MyView(timeout=15)
 
             button_message = await ctx.send("Click to join the game!", view=view)
-            await asyncio.sleep(15)
+            await asyncio.sleep(4)
             print("After waiting here is db")
             myjeopardy.get_all_data()
             await ctx.message.delete()
@@ -432,8 +437,20 @@ class Input:
             #GameBoard.initcategories(output)
             #####
 
-            newview = aView(run, myjeopardy, user_id)
+            newview = aView(run, myjeopardy, user_id, ctx, botmessage)
             await botmessage.edit(content=botmessageupdate, view=newview)  # Game table is drawn, categories and values printed
+
+            async def wait_for_button_click(client):
+                interaction = await client.wait_for("button_click")
+                return interaction
+            count = 0
+            # Inside your while loop, wait for a button click
+            cat = myjeopardy.get_game_categories(run)
+            categories = [r[0] for r in cat]
+
+            while True:
+                botmessageupdate = GameBoard.updatetable(categories, myjeopardy, run)
+                await botmessage.edit(content=botmessageupdate, view=newview)  # Game table is drawn, categories and values printed
 
 
 
@@ -485,6 +502,7 @@ class Input:
         if arg != answer:
             return str("-" + value)
     def pickcategory(input, myjeopardy, game_id):    #verify the user picked a proper category and value, it must exist for it to return true
+
         categoryusermsg, valueusermsg = input.split("# ")  # user must type "Category# Value"
         result = myjeopardy.search_questions(categoryusermsg,valueusermsg, game_id)
         print(result)
@@ -498,30 +516,37 @@ class Input:
 
 
 class aView(View):
-    def __init__(self, game_id, myjeopardy, user_id):
+    def __init__(self, game_id, myjeopardy, user_id, ctx, botmessage):
         super().__init__()
         self.game_id = game_id
         self.user_id = user_id
- #       count, rows = myjeopardy.countrows(game_id)
-        # create buttons dynamically
-#        for cate_id, quest_id in rows:
-#            label = f"Category {cate_id}, Question {quest_id}"
-#            custom_id = f"{cate_id}_{quest_id}"
-#            button = Button(label=label, style=discord.ButtonStyle.primary, custom_id=custom_id)
-#            self.add_item(button)
+        self.myjeopardy = myjeopardy
+        self.ctx = ctx
+        self.botmessage = botmessage
+        self.cat = myjeopardy.get_game_categories(game_id)
+
+        #print(self.cat)
+        #myjeopardy.search_questions(self.cat[0], 200, game_id)
+
 
 #Multiplayer game is hardcoded to have 5 categories, so there must be 25 buttons for each category and question
+    async def pick_question(self, category, value):
+        prompt = self.myjeopardy.search_questions(str(category), int(value), self.game_id)
+        print(prompt)
+
+
     @discord.ui.button(label="Cat 1, Quest 1", custom_id="CQ 11")
     async def callback11(self, button: discord.ui.Button, interaction: discord.Interaction):
         user_id = interaction.user.id
         print(f"Button {button.custom_id} clicked by user {user_id}")
+        await self.pick_question(self.cat[0][0], 200)
 
 
     @discord.ui.button(label="Cat 1, Quest 2", custom_id="CQ 12")
     async def callback12(self, button: discord.ui.Button, interaction: discord.Interaction):
         user_id = interaction.user.id
         print(f"Button {button.custom_id} clicked by user {user_id}")
-
+        await self.pick_question(self.cat[0][0], 400)
 
     @discord.ui.button(label="Cat 1, Quest 3", custom_id="CQ 13")
     async def callback13(self, button: discord.ui.Button, interaction: discord.Interaction):
@@ -707,7 +732,7 @@ class GameBoard:
         with open("categorystate.json", "w") as f:
             json.dump(categories_values, f)
 
-    def updatetable(categories, category_to_remove, value_to_delete, myjeopardy, game_id):   #update the table message, save the deletions so game can progress
+    def updatetable(categories, myjeopardy, game_id):   #update the table message, save the deletions so game can progress
 
         rows = myjeopardy.get_table_data(game_id)
         values = [200, 400, 600, 800, 1000]
@@ -715,7 +740,7 @@ class GameBoard:
         for category in categories:
             game_dict[category] = [v if v not in [row[1] for row in rows if row[0] == category] else None for v in
                                    values]
-        print(game_dict)
+        #print(game_dict)
         message = "```\nCategories:\n"
         longest_category_length = max(len(category) for category in categories)
         for i, category in enumerate(categories):
