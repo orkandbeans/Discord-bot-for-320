@@ -1,39 +1,33 @@
 import asyncio
-
 import discord
 import datetime as dt
-#from discord import app_commands
+from discord import app_commands
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-#import Ranking
-#from openAI import openAI
-#import SoundBoard
+import Ranking
+from openAI import openAI
+import SoundBoard
 import random
 import os
-#from osrsinfo import *
-#from osrshighscores import *
-#from geoguessr import geoguessr_game
-#import giveaway as giveaway
-
+from osrsinfo import *
+from osrshighscores import *
+from geoguessr import geoguessr_game
+import giveaway as giveaway
 
 #Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
 #Create BRIAN declaration for ranking
-#Brian = Ranking.BRIAN()
-#AI = openAI()
-
+Brian = Ranking.BRIAN()
+AI = openAI()
 
 #when bot is logged in
 
-from jeopardy import *
-
-
 
 #---Jeopardy Features----
+from jeopardy import *
 myjeopardy = JeopardyData()
 run = 0
 #----------------
-
 @bot.event
 async def on_ready():
     print("Bot is Up and Ready")
@@ -50,16 +44,15 @@ async def on_ready():
             continue
         roleList.append(role)
 
-#    Brian.initRoles(roleList)
- #   Brian.updateMembers(memberList)
+    Brian.initRoles(roleList)
+    Brian.updateMembers(memberList)
 
- #   if Brian.shouldSearch():
- #       print("Running background scoring...")
-  #      for channel in guild.text_channels:
-  #          await searchMessages(channel)
-   #     Brian.historyUpdate()
-   #     print("Done with background scoring.")
-
+    if Brian.shouldSearch():
+        print("Running background scoring...")
+        for channel in guild.text_channels:
+            await searchMessages(channel)
+        Brian.historyUpdate()
+        print("Done with background scoring.")
     #try to sync all commands that aren't actively in the tree or have been altered
     try:
         synced = await bot.tree.sync()
@@ -70,31 +63,18 @@ async def on_ready():
 
 @tasks.loop(hours=24)
 async def daily_giveaway():
-#    giveaways = await giveaway.getGiveaways()
- #   channels = giveaway.fetchAll()
+    giveaways = await giveaway.getGiveaways()
+    channels = giveaway.fetchAll()
     msg = discord.Embed(title='Giveaways')
- #   msg.description = giveaways[0]
- #   for channel in channels:
- #       await bot.get_channel(int(str(channel)[2:len(channel)-4])).send(embed=msg)
-
+    msg.description = giveaways[0]
+    for channel in channels:
+        await bot.get_channel(int(str(channel)[2:len(channel)-4])).send(embed=msg)
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
-
-# --------Jake's Commands-----
-@bot.command(name="jeopardy", pass_context=True)
-async def jeopardy(ctx, arg):
-    global run
-    run += 1
-    print(run)
-    await Input.playgame(myjeopardy, ctx, arg, bot, run)
-    print("Game has ended and back in main")
-    #myjeopardy.get_all_data()
-# -------------------------------------------------------------------
-
 # -----John's Commands-----
 # osrsinfo pulls and returns information from the osrs wiki
 # returning a list of output messages to accomodate discords 2000 character limit.
-#@bot.tree.command(name="osrsinfo")
+@bot.tree.command(name="osrsinfo")
 async def osrs_info_command(interaction: discord.Interaction, entity_name: str, search_option: int = 0):
     command_output = osrsinfo(entity_name, search_option)
     await interaction.response.send_message(command_output[0])
@@ -103,7 +83,7 @@ async def osrs_info_command(interaction: discord.Interaction, entity_name: str, 
 
 # osrshighscores pulls player information from the osrs highscores api
 # returning a list of output messages to accomodate discords 2000 character limit.
-#@bot.tree.command(name="osrshighscores")
+@bot.tree.command(name="osrshighscores")
 async def osrs_highscores_command(interaction: discord.Interaction, player_name: str, second_player_name: str = "", game_mode: str = ""):
     command_output = osrshighscores(player_name, second_player_name, game_mode)
     await interaction.response.send_message(command_output[0])
@@ -113,7 +93,7 @@ async def osrs_highscores_command(interaction: discord.Interaction, player_name:
 
 # -----Aaron's Commands-----
 #set up api key for server
-#@bot.tree.command(name="aisetup", description = "Start setup process of openAI API for arnold bot for the server")
+@bot.tree.command(name="aisetup", description = "Start setup process of openAI API for arnold bot for the server")
 async def aisetup(ctx: discord.Interaction):
     author = ctx.user
     server = ctx.guild.name
@@ -129,9 +109,9 @@ async def aisetup(ctx: discord.Interaction):
     await dm.send("Your key has been added to the database! You should now be able to use the Dalle and ChatGPT commands")
 
 #run the dalle command to generate an image
-#@bot.tree.command(name = "dalle", description = "Give a prompt and let openAI generate an image")
-#@app_commands.describe(prompt = "What prompt would you like to generate?")
-#@app_commands.describe(download = "Specify if you want this image sent and kept via download (specify True for yes, False for no)")
+@bot.tree.command(name = "dalle", description = "Give a prompt and let openAI generate an image")
+@app_commands.describe(prompt = "What prompt would you like to generate?")
+@app_commands.describe(download = "Specify if you want this image sent and kept via download (specify True for yes, False for no)")
 async def dalle(ctx: discord.Interaction, prompt: str, download: bool):
     await ctx.response.send_message("Give us a few seconds to generate your image.")
     user = ctx.user.id
@@ -184,7 +164,7 @@ async def dalle(ctx: discord.Interaction, prompt: str, download: bool):
     os.remove("temp/dalle.png")
 
 #remove the api key from the database
-#@bot.tree.command(name = "remove", description = "Remove the current API key from this server for OpenAI")
+@bot.tree.command(name = "remove", description = "Remove the current API key from this server for OpenAI")
 async def remove(ctx: discord.Interaction):
     server = ctx.guild.id
     if ctx.permissions.administrator:
@@ -205,7 +185,7 @@ async def remove(ctx: discord.Interaction):
         """)
 
 #superremove all api keys and server links
-#@bot.tree.command(name = "sudoremove", description = "Remove an API key from all servers")
+@bot.tree.command(name = "sudoremove", description = "Remove an API key from all servers")
 async def sudoremove(ctx: discord.Interaction):
     await ctx.response.send_message("""
     Okay!
@@ -229,9 +209,9 @@ async def sudoremove(ctx: discord.Interaction):
     """)
 
 #generate text from chatgpt from a prompt
-#@bot.tree.command(name = "chat", description = "Give a prompt and let openAI generate text")
-#@app_commands.describe(prompt = "What prompt would you like to generate?")
-#@app_commands.describe(size = "What size do you want your prompt to return")
+@bot.tree.command(name = "chat", description = "Give a prompt and let openAI generate text")
+@app_commands.describe(prompt = "What prompt would you like to generate?")
+@app_commands.describe(size = "What size do you want your prompt to return")
 async def dalle(ctx: discord.Interaction, prompt: str, size: int):
     await ctx.response.send_message("Give us a few seconds to generate your text.")
     user = ctx.user.id
@@ -272,8 +252,8 @@ async def dalle(ctx: discord.Interaction, prompt: str, size: int):
     """)
 
 #set up channel for daily giveaways
-#@bot.tree.command(name = "setupgiveaway", description = "Give a channel to receive news about giveaways")
-#@app_commands.describe(channel = "What channel would you like to use for your giveaways?")
+@bot.tree.command(name = "setupgiveaway", description = "Give a channel to receive news about giveaways")
+@app_commands.describe(channel = "What channel would you like to use for your giveaways?")
 async def setupgiveaway(ctx: discord.Interaction, channel: discord.TextChannel):
     author = ctx.user
     server = ctx.guild.id
@@ -288,7 +268,7 @@ async def setupgiveaway(ctx: discord.Interaction, channel: discord.TextChannel):
         await ctx.response.send_message("This server now has a giveaway channel that will be updated every day at 12:00PM Pacific Standard")
 
 #remove channel for daily giveaways
-#@bot.tree.command(name = "removegiveaway", description = "remove the giveaway channel for this server")
+@bot.tree.command(name = "removegiveaway", description = "remove the giveaway channel for this server")
 async def removegiveaway(ctx: discord.Interaction):
     author = ctx.user
     server = ctx.guild.id
@@ -302,69 +282,69 @@ async def removegiveaway(ctx: discord.Interaction):
         giveaway.removeGiveaway(server)
         await ctx.response.send_message("Giveaway channel has successfully been deleted. No more updates will be given")
 # -------------------------
-'''
+
 @bot.event
 async def on_message(message):
-  #  member = message.author
-  #  if not member.bot:
-  #      Brian.updateScore(member,message.content)
- #       await updateRoles(member)
+    member = message.author
+    if not member.bot:
+        Brian.updateScore(member,message.content)
+        await updateRoles(member)
 
 @bot.event
 async def on_message_delete(message):
-   # member = message.author
-   # if not member.bot:
-   #     Brian.reduceScore(member,message.content)
-  #      await updateRoles(member)
+    member = message.author
+    if not member.bot:
+        Brian.reduceScore(member,message.content)
+        await updateRoles(member)
 
 @bot.event
 async def on_message_edit(before,after):
-  #  member = before.author
-  #  if not member.bot:
-  #      Brian.reduceScore(member,before.content)
- #       Brian.updateScore(member,after.content)
- #       await updateRoles(member)
+    member = before.author
+    if not member.bot:
+        Brian.reduceScore(member,before.content)
+        Brian.updateScore(member,after.content)
+        await updateRoles(member)
 
 async def searchMessages(channel):
-  #  async for message in channel.history(limit=None):
-  #      if message.author.bot:
-   #         continue
-   #     result = Brian.historyCheck(message.author)
+    async for message in channel.history(limit=None):
+        if message.author.bot:
+            continue
+        result = Brian.historyCheck(message.author)
 
-  #      if result == 1:
-  #          continue
-  #      Brian.updateScore(message.author,message.content)
-  #      await updateRoles(message.author)
+        if result == 1:
+            continue
+        Brian.updateScore(message.author,message.content)
+        await updateRoles(message.author)
 
 async def updateRoles(member):
-  #  result = Brian.getMRoles(member)
-  #  hasRoles = []
+    result = Brian.getMRoles(member)
+    hasRoles = []
 
-  #  for role in member.roles:
-  #      hasRoles.append(role.name)
+    for role in member.roles:
+        hasRoles.append(role.name)
 
-  #  for role in result:
-  #      if role not in hasRoles:
-    #        #add role to member in discord
-    #        this = discord.utils.get(member.guild.roles, name=str(role))
-    #        if this is not None:
-    #            await member.add_roles(this)
-    #        else:
-   #             print(role + " role does not exist.")
+    for role in result:
+        if role not in hasRoles:
+            #add role to member in discord
+            this = discord.utils.get(member.guild.roles, name=str(role))
+            if this is not None:
+                await member.add_roles(this)
+            else:
+                print(role + " role does not exist.")
 
 
 @bot.event
 async def on_member_ban(guild, member):
-  #  Brian.deleteMember(member)
+    Brian.deleteMember(member)
 
 @bot.event
 async def on_member_join(member):
-  #  if not member.bot:
-  #      Brian.newMember(member)
+    if not member.bot:
+        Brian.newMember(member)
 
-#@bot.tree.command(name="listranks")
+@bot.tree.command(name="listranks")
 async def listranks(ctx: discord.Interaction):
-  #  result = Brian.getMemberRankList()
+    result = Brian.getMemberRankList()
     if result==1:
         await ctx.response.send_message(f"ERROR: The database did not access any members.")
     else:
@@ -376,7 +356,7 @@ async def listranks(ctx: discord.Interaction):
         await ctx.response.send_message(message)
 
 
-#@bot.tree.command(name="newrole")
+@bot.tree.command(name="newrole")
 async def newrole(ctx: discord.Interaction,role: str,score: int):
     result = Brian.newRole(role,score)
     if result==1:
@@ -385,7 +365,7 @@ async def newrole(ctx: discord.Interaction,role: str,score: int):
         Brian.updateMembers(ctx.guild.members)
         await ctx.response.send_message(f"{role} has been added to the database.")
 
-#@bot.tree.command(name="deleterole")
+@bot.tree.command(name="deleterole")
 async def deleterole(ctx: discord.Interaction,role: str):
     result = Brian.deleteRole(role)
     if result==1:
@@ -393,7 +373,7 @@ async def deleterole(ctx: discord.Interaction,role: str):
     else:
         await ctx.response.send_message(f"{role} has been removed from the database.")
 
-#@bot.tree.command(name="addrole")
+@bot.tree.command(name="addrole")
 async def addrole(ctx: discord.Interaction,role: str, member: str):
     result = Brian.addMemberRole(role,member)
     if result==1:
@@ -401,7 +381,7 @@ async def addrole(ctx: discord.Interaction,role: str, member: str):
     else:
         await ctx.response.send_message(f"{role} has been added to {member}.")
 
-#@bot.tree.command(name="removerole")
+@bot.tree.command(name="removerole")
 async def removerole(ctx: discord.Interaction,role: str, member: str):
     result = Brian.removeMemberRole(role,member)
     if result==1:
@@ -409,7 +389,7 @@ async def removerole(ctx: discord.Interaction,role: str, member: str):
     else:
         await ctx.response.send_message(f"{role} has been removed from {member}.")
 
-#@bot.tree.command(name="getroles")
+@bot.tree.command(name="getroles")
 async def getroles(ctx: discord.Interaction,member: str):
     result = Brian.getMRoles(member)
 
@@ -420,17 +400,35 @@ async def getroles(ctx: discord.Interaction,member: str):
         for role in result:
             sendMessage = sendMessage + f"{role}\n"
         await ctx.response.send_message(sendMessage)
-'''
 
+# --------Jake's Commands-----
+@bot.command(name="jeopardy", pass_context=True)
+async def jeopardy(ctx, arg):
+    global run
+    run += 1
+    print(run)
+    await Input.playgame(myjeopardy, ctx, arg, bot, run)
+    print("Game has ended and back in main")
+    #myjeopardy.get_all_data()
+# -------------------------------------------------------------------
 
-@bot.command(name="soundboard", pass_context=True)
-async def sound_request(ctx, message):
-    speaker = ctx.author
-    await SoundBoard.Sound.connect(speaker, message)
 
 @bot.command(name="geoguessr")
 async def geoguessr(ctx):
     await geoguessr_game(bot,ctx)
+
+@bot.command(name="soundboard", pass_context=True)
+async def soundboard(ctx):
+    if ctx.author.voice is None:
+        await ctx.reply("please join a voice chat and try again")
+        return
+    # voice channel of user
+    voice_channel = ctx.author.voice.channel
+    # connect to channel
+    await voice_channel.connect()
+
+    my_board = SoundBoard.Board(ctx)
+    await ctx.reply(view=my_board.menu)
 
 #-------------------------------------------------------------------
 
