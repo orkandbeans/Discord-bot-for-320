@@ -1,24 +1,24 @@
 import asyncio
 import discord
 import datetime as dt
-from discord import app_commands
+#from discord import app_commands
 from discord.ext import commands, tasks
 from dotenv import load_dotenv
-import Ranking
+'''import Ranking
 from openAI import openAI
 import SoundBoard
-import random
+import random'''
 import os
-from osrsinfo import *
+'''from osrsinfo import *
 from osrshighscores import *
 from geoguessr import geoguessr_game
-import giveaway as giveaway
+import giveaway as giveaway'''
 
 #Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
 #Create BRIAN declaration for ranking
-Brian = Ranking.BRIAN()
-AI = openAI()
+'''Brian = Ranking.BRIAN()
+AI = openAI()'''
 
 #when bot is logged in
 
@@ -28,7 +28,7 @@ from jeopardy import *
 myjeopardy = JeopardyData()
 run = 0
 #----------------
-@bot.event
+'''@bot.event
 async def on_ready():
     print("Bot is Up and Ready")
     if not daily_giveaway.is_running():
@@ -59,9 +59,9 @@ async def on_ready():
         print(f"Synced {len(synced)} command(s)")
     # else print exception
     except Exception as e:
-        print(e)
+        print(e)'''
 
-@tasks.loop(hours=24)
+'''@tasks.loop(hours=24)
 async def daily_giveaway():
     giveaways = await giveaway.getGiveaways()
     channels = giveaway.fetchAll()
@@ -69,31 +69,31 @@ async def daily_giveaway():
     msg.description = giveaways[0]
     for channel in channels:
         await bot.get_channel(int(str(channel)[2:len(channel)-4])).send(embed=msg)
-
+'''
 # -----------------INSERT BOT COMMANDS HERE--------------------------
 # -----John's Commands-----
 # osrsinfo pulls and returns information from the osrs wiki
 # returning a list of output messages to accomodate discords 2000 character limit.
-@bot.tree.command(name="osrsinfo")
+'''@bot.tree.command(name="osrsinfo")
 async def osrs_info_command(interaction: discord.Interaction, entity_name: str, search_option: int = 0):
     command_output = osrsinfo(entity_name, search_option)
     await interaction.response.send_message(command_output[0])
     for i in range(1, len(command_output)):
         await interaction.followup.send(command_output[i])
-
+'''
 # osrshighscores pulls player information from the osrs highscores api
 # returning a list of output messages to accomodate discords 2000 character limit.
-@bot.tree.command(name="osrshighscores")
+'''@bot.tree.command(name="osrshighscores")
 async def osrs_highscores_command(interaction: discord.Interaction, player_name: str, second_player_name: str = "", game_mode: str = ""):
     command_output = osrshighscores(player_name, second_player_name, game_mode)
     await interaction.response.send_message(command_output[0])
     for i in range(1, len(command_output)):
         await interaction.followup.send(command_output[i])
 #--------------------------
-
+'''
 # -----Aaron's Commands-----
 #set up api key for server
-@bot.tree.command(name="aisetup", description = "Start setup process of openAI API for arnold bot for the server")
+'''@bot.tree.command(name="aisetup", description = "Start setup process of openAI API for arnold bot for the server")
 async def aisetup(ctx: discord.Interaction):
     author = ctx.user
     server = ctx.guild.name
@@ -107,9 +107,9 @@ async def aisetup(ctx: discord.Interaction):
     APIkey = await bot.wait_for('message')
     AI.insertKey(APIkey.content, ctx.guild.id)
     await dm.send("Your key has been added to the database! You should now be able to use the Dalle and ChatGPT commands")
-
+'''
 #run the dalle command to generate an image
-@bot.tree.command(name = "dalle", description = "Give a prompt and let openAI generate an image")
+'''@bot.tree.command(name = "dalle", description = "Give a prompt and let openAI generate an image")
 @app_commands.describe(prompt = "What prompt would you like to generate?")
 @app_commands.describe(download = "Specify if you want this image sent and kept via download (specify True for yes, False for no)")
 async def dalle(ctx: discord.Interaction, prompt: str, download: bool):
@@ -162,9 +162,9 @@ async def dalle(ctx: discord.Interaction, prompt: str, download: bool):
             <@{user}> here's your image for prompt: {prompt}
             """, file=discord.File(image_file, filename='dalle.png'))
     os.remove("temp/dalle.png")
-
+'''
 #remove the api key from the database
-@bot.tree.command(name = "remove", description = "Remove the current API key from this server for OpenAI")
+'''@bot.tree.command(name = "remove", description = "Remove the current API key from this server for OpenAI")
 async def remove(ctx: discord.Interaction):
     server = ctx.guild.id
     if ctx.permissions.administrator:
@@ -400,7 +400,7 @@ async def getroles(ctx: discord.Interaction,member: str):
         for role in result:
             sendMessage = sendMessage + f"{role}\n"
         await ctx.response.send_message(sendMessage)
-
+'''
 # --------Jake's Commands-----
 @bot.command(name="jeopardy", pass_context=True)
 async def jeopardy(ctx, arg):
@@ -412,7 +412,7 @@ async def jeopardy(ctx, arg):
     #myjeopardy.get_all_data()
 # -------------------------------------------------------------------
 
-
+'''
 @bot.command(name="geoguessr")
 async def geoguessr(ctx):
     await geoguessr_game(bot,ctx)
@@ -429,7 +429,7 @@ async def soundboard(ctx):
 
     my_board = SoundBoard.Board(ctx)
     await ctx.reply(view=my_board.menu)
-
+'''
 #-------------------------------------------------------------------
 
 #load the key
