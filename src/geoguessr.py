@@ -37,6 +37,7 @@ class G_game:
         await message.channel.send("Starting in...")
         await count_down(message)
         
+        #game loop
         while self.round_num < self.num_rounds:
             
             for player in player_list:
@@ -92,7 +93,6 @@ class G_game:
         response = requests.get(url)
 
         if response.status_code == 200:
-            print("state:", self.cur_location.name, "city:", rand_city)
             return response
         else:
             print("Failed to retrieve image. Response status code:", response.status_code)
@@ -148,9 +148,9 @@ class G_game:
 
         if response.status_code == 200:
             data = response.json()
-            print(data)
+            
             if len(data["results"]) == 0:
-                print()
+                
                 player_lat = 23.6345
                 player_lng = 102.5528
             else:
@@ -171,7 +171,6 @@ class G_game:
             data = response.json()
             real_lat = data["results"][0]["geometry"]["location"]["lat"]
             real_lng = data["results"][0]["geometry"]["location"]["lng"]
-            print(f"Real location - Latitude: {real_lat}, Longitude: {real_lng}")
             
         else:
             print(f"Error: {response.status_code}")
@@ -188,7 +187,6 @@ class G_game:
         c = 2 * math.atan2(math.sqrt(a), math.sqrt( 1 - a))
         
         distance = radius * c
-        print(distance)
         
         return distance
     
@@ -211,7 +209,7 @@ class G_game:
         max_time_to_guess = self.max_time
         
         accuracy = (prev_score_weight * (player.score/100)) + (distance_weight * (1 - (distance/max_distance))) + (time_weight * (1 - (time_to_guess/max_time_to_guess)))
-        print(accuracy)
+
         player.score = 100 * accuracy
         
         return accuracy
@@ -237,7 +235,8 @@ class G_game:
         await message.channel.send(f'You averaged {formatted_time} seconds per guess,')
         await message.channel.send(f'Along with an average distance from the correct location of {formatted_distance} miles!')
         return
-    
+
+#each player is stored as a Player, holds vars for scoring  
 class Player:
     def __init__(self, name, score):
         self.name = name
@@ -249,6 +248,7 @@ class Player:
         self.total_distance = 0
         self.rounds = 0
 
+#each state is stored as a Location, a picture is chosen randomly from 20 cities in the city list
 class Location:
     def __init__(self, name, city_list):
         self.name = name
@@ -303,6 +303,7 @@ async def get_player_num(message, bot):
             
     return num_players
 
+#add players to the player list, ensure no duplicates
 async def get_players(num_players, message, bot):
     #make sure we are talking to user who issued "Geoguessr" command
     def check_user(new_message):
@@ -344,6 +345,7 @@ async def count_down(message):
     time.sleep(1)
     return
 
+#creates 4 buttons in the game menu
 class menuButtons(discord.ui.View):
     def __init__(self, bot, message):
         super().__init__()
@@ -359,7 +361,6 @@ class menuButtons(discord.ui.View):
         player = Player(self.message.author.name, 50)
         self.player_list.append(player)
         self.end = True
-        print(self.end)
         
     @discord.ui.button(label="Multi-Player", style=discord.ButtonStyle.secondary, custom_id="2")
     async def button_callback2(self, x, y):
@@ -454,13 +455,12 @@ async def menu(bot, message):
     
     start_game_flag = False
     flag = False
-    print(buttons.end)
     
     but = await message.channel.send('Options:', view=buttons)
     while not flag:
         
         flag = buttons.end
-        # Wait for a button to be pressed
+        #timeout a couple seconds
         try:
             button = await bot.wait_for("button_click", timeout=2)
         except asyncio.TimeoutError:
