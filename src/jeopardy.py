@@ -633,6 +633,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[0][0], 200)
@@ -646,6 +647,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[0][0], 400)
@@ -658,6 +660,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[0][0], 600)
@@ -670,6 +673,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[0][0], 800)
@@ -683,6 +687,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[0][0], 1000)
@@ -696,6 +701,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[1][0], 200)
@@ -709,6 +715,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[1][0], 400)
@@ -722,6 +729,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[1][0], 600)
@@ -735,6 +743,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[1][0], 800)
@@ -748,6 +757,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[1][0], 1000)
@@ -759,6 +769,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[2][0], 200)
@@ -771,6 +782,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[2][0], 400)
@@ -783,6 +795,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[2][0], 600)
@@ -795,6 +808,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[2][0], 800)
@@ -807,6 +821,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[2][0], 1000)
@@ -819,6 +834,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[3][0], 200)
@@ -831,6 +847,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[3][0], 400)
@@ -843,6 +860,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[3][0], 600)
@@ -855,6 +873,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[3][0], 800)
@@ -867,6 +886,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[3][0], 1000)
@@ -879,6 +899,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[4][0], 200)
@@ -891,6 +912,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[4][0], 400)
@@ -903,6 +925,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[4][0], 600)
@@ -915,6 +938,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[4][0], 800)
@@ -927,6 +951,7 @@ class aView(View):
                 #user is not allowed to select this button
                 print("user is not allowed to select this button")
                 return
+            await interaction.response.defer()
             print(f"Button {button.custom_id} clicked by user {user_id}")
             button.disabled = True
             await self.pick_question(self.cat[4][0], 1000)
@@ -1036,4 +1061,3 @@ class GameBoard:
             return True
         else:
             return False
-
