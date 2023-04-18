@@ -454,11 +454,6 @@ async def jeopardy(ctx, arg):
     await ctx.send("You earned " + str(money))
     await ctx.send("Thanks for playing!")
 
-@bot.command(name="soundboard", pass_context=True)
-async def sound_request(ctx, message):
-    speaker = ctx.author
-    await SoundBoard.Sound.connect(speaker, message)
-
 @bot.command(name="geoguessr")
 async def geoguessr(ctx):
     await geoguessr_game(bot,ctx)
