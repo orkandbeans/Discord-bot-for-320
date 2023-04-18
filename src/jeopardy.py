@@ -5,6 +5,7 @@ import discord
 import asyncio
 import sqlite3
 from discord.ui import Button, View
+import difflib
 intents = discord.Intents.default()
 client = discord.Client(intents=intents)
 class JeopardyData:
@@ -532,13 +533,15 @@ class Input:
         result = result.strip()
         print("hidden answer: " + result)
         return result
-    def answer(answer, arg, value,myjeopardy,user_id): #simple answer check, user must type answer perfectly in accordance to the JSON file, this will be updated for major milestone
+
+    def answer(answer, arg, value, myjeopardy, user_id):
         answer = answer.lower()
         arg = arg.lower()
-        if arg == answer:
-            myjeopardy.update_money(user_id,value)
+        similarity_ratio = difflib.SequenceMatcher(None, answer, arg).ratio()
+        if similarity_ratio >= 0.8:
+            myjeopardy.update_money(user_id, value)
             return str(value)
-        if arg != answer:
+        else:
             thisvalue = "-" + str(value)
             myjeopardy.update_money(user_id, int(thisvalue))
             return str("-" + value)
@@ -927,11 +930,6 @@ class aView(View):
             await self.pick_question(self.cat[4][0], 1000)
 
 
-    @discord.ui.button(label="Quit", custom_id="Quit")
-    async def callback11(self, button: discord.ui.Button, interaction: discord.Interaction):
-        quitting = await self.ctx.send("quit")
-        GameBoard.gameover(self.myjeopardy,quitting,self.game_id)
-        self.quit = True
     def is_quit(self):
         if(self.quit):
             return True
