@@ -1,22 +1,10 @@
-from os.path import isfile
-from sqlite3 import connect
+import os
+import sqlite3
 
-DB_PATH = "./data/db/database.db"
-BUILD_PATH = "./data/db/build.sql"
+DB_PATH = "C:\\Users\\Viscount\\Documents\\GitHub\\Discord-bot-for-320\\data\\db\\database.db"
 
-cxn = connect(DB_PATH, check_same_thread=False)
+cxn = sqlite3.connect(DB_PATH, check_same_thread=False)
 cur = cxn.cursor()
-
-def with_commit(func):
-    def inner(*args, **kwargs):
-        func(*args, **kwargs)
-        commit()
-    return inner
-
-@with_commit
-def build():
-    if isfile(BUILD_PATH):
-        scriptexec(BUILD_PATH)
 
 def commit():
     cxn.commit()
