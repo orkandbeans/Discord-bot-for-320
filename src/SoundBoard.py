@@ -322,7 +322,7 @@ class Board():
         #---------------------------cricket--------------------------------------------#
         async def cricket_callback(interaction):
             voice_channel = ctx.author.voice.channel
-            video_url = 'https://youtu.be/J3AUydOQsHU'
+            video_url = 'https://www.youtube.com/watch?v=RktX4lbe_g4'
             await play_youtube_audio(video_url, voice_channel)
             await interaction.response.defer()
         self.cricket.callback = cricket_callback
@@ -469,8 +469,7 @@ class Board():
             voice_channel = ctx.author.voice.channel
             if self.video_url1 == '':
                 await interaction.response.send_message("submit a link")
-                
-                self.video_url1 = ctx.message.content
+                self.video_url1 = await self.bot.wait_for('message')
             else:
                 await play_youtube_audio(self.video_url1, voice_channel)
                 await interaction.response.defer()
