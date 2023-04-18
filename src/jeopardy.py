@@ -60,6 +60,17 @@ class JeopardyData:
         self.conn.commit()
 
         print("db made")
+
+    def update_money(self, user_id, amount):
+        cursor = self.database.execute("SELECT money FROM Jeopardy WHERE User_id=?",(user_id,))
+        result = cursor.fetchone()
+        if result is not None:
+            current_money = result[0]
+            new_money = int(current_money) + int(amount)
+            self.database.execute("UPDATE Jeopardy SET money=? WHERE User_id=?",(new_money, user_id))
+    def multiplayer_insert(self,user_id,server_id,game_id):
+        self.database.execute("INSERT INTO Multiplayer (User_id, Server_id, Game_id) VALUES (?, ?, ?)", (user_id,server_id,game_id))
+        self.conn.commit
     def insert_questions(self, category, value, question, answer, run, cate_id, quest_id):
         self.database.execute("INSERT INTO Games (Game_id, Cate_id, Quest_id, category, value, question, answer, chosen) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (run, cate_id, quest_id, category, value, question, answer, 1))
@@ -69,9 +80,20 @@ class JeopardyData:
         rows = cursor.fetchall()
         count = len(rows)
         return count, rows
+    def countmultiplayer(self, game_id):
+        cursor = self.database.execute("SELECT * FROM Multiplayer WHERE Game_id = ?", (game_id,))
+        rows = cursor.fetchall()
+        count = len(rows)
+        return count
+    def gamecheck(self, game_id, user_id):
+        cursor = self.database.execute("SELECT * FROM Multiplayer WHERE Game_id = ? AND User_id = ?", (game_id,user_id))
+        rows = cursor.fetchall()
+        return rows
     def search_questions(self, category, value, game_id):
-        cursor = self.database.execute("SELECT * FROM Games WHERE Game_id=? AND category=? AND value=? AND chosen=1", (int(game_id), str(category), int(value)))
+
+        cursor = self.database.execute("SELECT * FROM Games WHERE Game_id=? AND category=? AND value=? AND chosen=1", (int(game_id), category, int(value)))
         result = cursor.fetchall()
+
         if result:
             self.database.execute("UPDATE Games SET chosen = 0 WHERE Game_id=? AND category=? AND value=?", (int(game_id),str(category),int(value)))
             return result
@@ -92,9 +114,11 @@ class JeopardyData:
 
         cursor = self.database.execute("SELECT COUNT(*) FROM GAMES WHERE Game_id=? AND chosen = 1", (game_id,))
         result = cursor.fetchone()[0]
-        print("COUNT RESULTS")
-        print(result)
+        #print("COUNT RESULTS")
+        #print(result)
         return(result)
+
+
     def get_all_data(self):
         query = "SELECT * FROM Jeopardy"
         cursor = self.conn.execute(query)
@@ -106,6 +130,12 @@ class JeopardyData:
         cursor = self.conn.execute(query)
         rows = cursor.fetchall()
         print("From Games:")
+        for row in rows:
+            print(row)
+        query = "SELECT * FROM Multiplayer"
+        cursor = self.conn.execute(query)
+        rows = cursor.fetchall()
+        print("From Multiplayer:")
         for row in rows:
             print(row)
     def user_exists(self, user_id, server_id):
@@ -169,7 +199,7 @@ class JeopardyData:
     def update_is_in_game(self, user_id, server_id, value):
         try:
             self.database.execute("UPDATE Jeopardy SET isInGame = ? WHERE User_id = ? AND Server_id = ?",
-                                  (value, user_id, server_id))
+                                  (int(value), user_id, server_id))
             self.conn.commit()
             print("isInGame value updated in Jeopardy table.")
         except sqlite3.Error as error:
@@ -214,7 +244,10 @@ class GameStart:
             print("MYSELECTCAT")
             print(myselectcategory)
             return (myselectcategory)
-    def pullquestion(category, value):  #return the question that the user wanted
+    def pullquestion(category, value, game_id, myjeopardy):  #return the question that the user wanted
+        #yes=myjeopardy.search_questions(1, value, game_id)
+        #print("YES")
+        #print(yes)
         with open("jeopardydata.json", "r") as file:
             data = json.load(file)
             #print(data)
@@ -285,7 +318,7 @@ class Input:
         def checkifquit(m, game_id):
             if m.content == "quit":
                 GameBoard.gameover(myjeopardy, m, game_id)
-                print("It happened")
+                print("Quitting")
                 return True
             else:
                 return False
@@ -349,7 +382,7 @@ class Input:
                 await usermsg.delete()
                 categoryusermsg, valueusermsg = usermsg.content.split("# ")  # user must type "Category# Value"
                 botmessageupdate = GameBoard.updatetable(output, myjeopardy, run)
-                question = GameStart.pullquestion(categoryusermsg, valueusermsg)
+                question = GameStart.pullquestion(categoryusermsg, valueusermsg, run, myjeopardy)
                 myquestion = await ctx.send(question["question"])  # SEND QUESTION
                 print("Answer: " + question["answer"])
                # print(Input.hint_giver(question["answer"]))
@@ -373,7 +406,7 @@ class Input:
                     if(checkifquit(usermsg, run)):
                         await ctx.send("Ending game")
                         return
-                    result = Input.answer(question["answer"], usermsg.content, valueusermsg)
+                    result = Input.answer(question["answer"], usermsg.content, valueusermsg,myjeopardy,user_id)
                     await botmessage.edit(content=botmessageupdate)  # UPDATE TABLE
                     if int(result) < 0:
                         help += 1
@@ -406,7 +439,7 @@ class Input:
             view = MyView(timeout=15)
 
             button_message = await ctx.send("Click to join the game!", view=view)
-            await asyncio.sleep(4)
+            await asyncio.sleep(8)
             print("After waiting here is db")
             myjeopardy.get_all_data()
             await ctx.message.delete()
@@ -425,10 +458,14 @@ class Input:
                     clicked_user_names.remove(user.name)
                 else:
                     print("User is not in a previous game, can continue")
+                    myjeopardy.multiplayer_insert(user_id, server_id, run)
             await ctx.send(f"Players: {clicked_user_names}")
-
+            if not clicked_user_ids:
+                await ctx.send("Nobody joined")
+                return
             # usermsg is how many categories to play with
             botmessage = await ctx.send("``` Choosing categories: ```")
+
             output = GameStart.startgame("custom", 5,myjeopardy, run)
             myjeopardy.get_all_data()
 
@@ -436,18 +473,23 @@ class Input:
             botmessageupdate = GameBoard.drawtable(output)
             #GameBoard.initcategories(output)
             #####
-
-            newview = aView(run, myjeopardy, user_id, ctx, botmessage)
+            #First person to pick is the host
+            newview = aView(run, myjeopardy, ctx.author.id, ctx, botmessage, bot)
             await botmessage.edit(content=botmessageupdate, view=newview)  # Game table is drawn, categories and values printed
-
-
             cat = myjeopardy.get_game_categories(run)
             categories = [r[0] for r in cat]
 
             while True:
                 botmessageupdate = GameBoard.updatetable(categories, myjeopardy, run)
                 await botmessage.edit(content=botmessageupdate, view=newview)  # Game table is drawn, categories and values printed
-
+                if GameBoard.gameover(myjeopardy, botmessage,run):
+                    break
+                #print(newview.is_quit())
+                if newview.is_quit():
+                    break
+            for user_id in clicked_user_ids:
+                myjeopardy.update_is_in_game(user_id,server_id,0)
+            await ctx.send("Game over")
 
 
         myjeopardy.end_game(user_id, server_id)
@@ -490,12 +532,15 @@ class Input:
         result = result.strip()
         print("hidden answer: " + result)
         return result
-    def answer(answer, arg, value): #simple answer check, user must type answer perfectly in accordance to the JSON file, this will be updated for major milestone
+    def answer(answer, arg, value,myjeopardy,user_id): #simple answer check, user must type answer perfectly in accordance to the JSON file, this will be updated for major milestone
         answer = answer.lower()
         arg = arg.lower()
         if arg == answer:
+            myjeopardy.update_money(user_id,value)
             return str(value)
         if arg != answer:
+            thisvalue = "-" + str(value)
+            myjeopardy.update_money(user_id, int(thisvalue))
             return str("-" + value)
     def pickcategory(input, myjeopardy, game_id):    #verify the user picked a proper category and value, it must exist for it to return true
 
@@ -511,160 +556,387 @@ class Input:
             return False
 
 
+
 class aView(View):
-    def __init__(self, game_id, myjeopardy, user_id, ctx, botmessage):
+    def __init__(self, game_id, myjeopardy, user_id, ctx, botmessage,bot):
         super().__init__()
+        self.quit = False
         self.game_id = game_id
         self.user_id = user_id
         self.myjeopardy = myjeopardy
         self.ctx = ctx
+        self.bot = bot
         self.botmessage = botmessage
         self.cat = myjeopardy.get_game_categories(game_id)
-
-        #print(self.cat)
+        self.inround = False
+        print(self.cat[0][0])
+        print(self.cat[1][0])
         #myjeopardy.search_questions(self.cat[0], 200, game_id)
 
 
-#Multiplayer game is hardcoded to have 5 categories, so there must be 25 buttons for each category and question
-    async def pick_question(self, category, value):
-        prompt = self.myjeopardy.search_questions(str(category), int(value), self.game_id)
-        print(prompt)
 
+    #Multiplayer game is hardcoded to have 5 categories, so there must be 25 buttons for each category and question
+    async def pick_question(self, category, value):
+        self.inround = True
+        def check(m):  # only allow the author to answer
+            return m.author.id == self.user_id
+        def mycheck(m):
+            if(self.myjeopardy.gamecheck(self.game_id,m.author.id)):
+                return m.author.id
+
+        prompt = self.myjeopardy.search_questions(str(category), int(value), self.game_id)
+        question = ", ".join([r[5] for r in prompt])
+        answer = ", ".join([r[6] for r in prompt])
+        print(question)
+        botquestion = await self.ctx.send(question)
+        print(answer)
+        usermsg = await self.bot.wait_for('message', check=check)
+        print(usermsg.content)
+
+        result = Input.answer(answer, usermsg.content, str(value),self.myjeopardy,self.user_id)
+        if int(result) < 0:
+            playercount = self.myjeopardy.countmultiplayer(self.game_id)
+            count=0
+            await self.ctx.send(str(usermsg.author) + " got it wrong", delete_after=3)
+            await self.ctx.send("First person to give an answer",delete_after=5)
+            newuser = await self.bot.wait_for('message', check=mycheck)
+            await self.ctx.send(str(newuser.author) + " was first", delete_after=3)
+            result = Input.answer(answer, newuser.content, str(value),self.myjeopardy,newuser.author.id)
+            if int(result) < 0:
+                await self.ctx.send(str(newuser.author) + " got it wrong too",delete_after=3)
+            else:   #new person got it right so set them to pick next category
+                await self.ctx.send(str(newuser.author) + " got it right!",delete_after=3)
+                print(newuser.author.id)
+                self.set_user_id(newuser.author.id)
+                #self.myjeopardy.get_all_data()
+            await newuser.delete()
+        else:
+            await self.ctx.send(str(usermsg.author) + " got it right!",delete_after=3)
+            self.set_user_id(usermsg.author.id)
+        await usermsg.delete()
+        await botquestion.delete()
+        self.inround = False
+        await self.ctx.send("Round over", delete_after=3)
+    def set_user_id(self, user_id): #setter function to change whose turn it is
+        self.user_id = user_id
 
     @discord.ui.button(label="Cat 1, Quest 1", custom_id="CQ 11")
     async def callback11(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
-        await self.pick_question(self.cat[0][0], 200)
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[0][0], 200)
 
 
     @discord.ui.button(label="Cat 1, Quest 2", custom_id="CQ 12")
     async def callback12(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
-        await self.pick_question(self.cat[0][0], 400)
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[0][0], 400)
 
     @discord.ui.button(label="Cat 1, Quest 3", custom_id="CQ 13")
     async def callback13(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
-
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[0][0], 600)
 
     @discord.ui.button(label="Cat 1, Quest 4", custom_id="CQ 14")
     async def callback14(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[0][0], 800)
 
 
     @discord.ui.button(label="Cat 1, Quest 5", custom_id="CQ 15")
     async def callback15(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[0][0], 1000)
 
 
     @discord.ui.button(label="Cat 2, Quest 1", custom_id="CQ 21")
     async def callback21(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[1][0], 200)
 
 
     @discord.ui.button(label="Cat 2, Quest 2", custom_id="CQ 22")
     async def callback22(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[1][0], 400)
 
 
     @discord.ui.button(label="Cat 2, Quest 3", custom_id="CQ 23")
     async def callback23(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[1][0], 600)
 
 
     @discord.ui.button(label="Cat 2, Quest 4", custom_id="CQ 24")
     async def callback24(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[1][0], 800)
 
 
     @discord.ui.button(label="Cat 2, Quest 5", custom_id="CQ 25")
     async def callback25(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[1][0], 1000)
     @discord.ui.button(label="Cat 3, Quest 1", custom_id="CQ 31")
     async def callback31(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[2][0], 200)
 
     @discord.ui.button(label="Cat 3, Quest 2", custom_id="CQ 32")
     async def callback32(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[2][0], 400)
 
     @discord.ui.button(label="Cat 3, Quest 3", custom_id="CQ 33")
     async def callback33(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[2][0], 600)
 
     @discord.ui.button(label="Cat 3, Quest 4", custom_id="CQ 34")
     async def callback34(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[2][0], 800)
 
     @discord.ui.button(label="Cat 3, Quest 5", custom_id="CQ 35")
     async def callback35(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[2][0], 1000)
 
     @discord.ui.button(label="Cat 4, Quest 1", custom_id="CQ 41")
     async def callback41(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[3][0], 200)
 
     @discord.ui.button(label="Cat 4, Quest 2", custom_id="CQ 42")
     async def callback42(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[3][0], 400)
 
     @discord.ui.button(label="Cat 4, Quest 3", custom_id="CQ 43")
     async def callback43(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[3][0], 600)
 
     @discord.ui.button(label="Cat 4, Quest 4", custom_id="CQ 44")
     async def callback44(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[3][0], 800)
 
     @discord.ui.button(label="Cat 4, Quest 5", custom_id="CQ 45")
     async def callback45(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[3][0], 1000)
 
     @discord.ui.button(label="Cat 5, Quest 1", custom_id="CQ 51")
     async def callback51(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[4][0], 200)
 
     @discord.ui.button(label="Cat 5, Quest 2", custom_id="CQ 52")
     async def callback52(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[4][0], 400)
 
     @discord.ui.button(label="Cat 5, Quest 3", custom_id="CQ 53")
     async def callback53(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[4][0], 600)
 
     @discord.ui.button(label="Cat 5, Quest 4", custom_id="CQ 54")
     async def callback54(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[4][0], 800)
 
     @discord.ui.button(label="Cat 5, Quest 5", custom_id="CQ 55")
     async def callback55(self, button: discord.ui.Button, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        print(f"Button {button.custom_id} clicked by user {user_id}")
+        if not self.inround:
+            user_id = interaction.user.id
+            if self.user_id != user_id:
+                #user is not allowed to select this button
+                print("user is not allowed to select this button")
+                return
+            print(f"Button {button.custom_id} clicked by user {user_id}")
+            button.disabled = True
+            await self.pick_question(self.cat[4][0], 1000)
 
+
+    @discord.ui.button(label="Quit", custom_id="Quit")
+    async def callback11(self, button: discord.ui.Button, interaction: discord.Interaction):
+        quitting = await self.ctx.send("quit")
+        GameBoard.gameover(self.myjeopardy,quitting,self.game_id)
+        self.quit = True
+    def is_quit(self):
+        if(self.quit):
+            return True
+        else:
+            return False
 
 class MyView(View):
     def __init__(self, timeout):
@@ -676,7 +948,7 @@ class MyView(View):
         user_id = interaction.user.id
         print(interaction.user.name)
         guild_id = interaction.guild.id
-        if user_id in self.clicked_users:
+        if user_id in self.clicked_users_ids:
             await interaction.response.send_message(f"{interaction.user.mention} has already joined the lobby.", delete_after=5)
         else:
             self.clicked_users.append(interaction.user.name)
@@ -687,9 +959,10 @@ class MyView(View):
     @discord.ui.button(label="Leave", style=discord.ButtonStyle.primary, custom_id="leave_button")
     async def leave_button_callback(self, button, interaction):
         user_id = interaction.user.id
-        if user_id in self.clicked_users:
-            self.clicked_users.append(interaction.user.name)
-            self.clicked_users_ids.append(user_id)
+        print(interaction.user.name)
+        if user_id in self.clicked_users_ids:
+            self.clicked_users.remove(interaction.user.name)
+            self.clicked_users_ids.remove(user_id)
             await interaction.response.send_message(f"{interaction.user.mention} has left the lobby.", delete_after=5)
         else:
             await interaction.response.send_message(f"{interaction.user.mention} is not in the lobby.", delete_after=5)
@@ -756,9 +1029,11 @@ class GameBoard:
 
         if(user.content == "quit"):
             print("Quiting because user said so")
+
             myjeopardy.end_game(user.author.id, user.guild.id)
             return True
         if count == 0:
             return True
         else:
             return False
+
