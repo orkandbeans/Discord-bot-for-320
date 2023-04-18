@@ -4,27 +4,27 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from dotenv import load_dotenv
-#import Ranking
-#from openAI import openAI
-#import SoundBoard
+import Ranking
+from openAI import openAI
+import SoundBoard
 import random
 import os
 from geoguessr import geoguessr_game
-#from lorelookup import *
-#from osrsinfo import *
+from lorelookup import *
+from osrsinfo import *
 
 
 #Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
 #Create BRIAN declaration for ranking
 
-#Brian = Ranking.BRIAN()
-#AI = openAI()
+Brian = Ranking.BRIAN()
+AI = openAI()
 
 
 #when bot is logged in
 
-#from jeopardy import *
+from jeopardy import *
 
 
 @bot.event
@@ -32,8 +32,8 @@ async def on_ready():
     print("Bot is Up and Ready")
 
     #get the guild with all users in our specific discord and run an update on the members of the database
-    #memberList = bot.get_guild(1065019755628613682).members
-    #Brian.botCommand("updateMembers",memberList,"")
+    memberList = bot.get_guild(1065019755628613682).members
+    Brian.botCommand("updateMembers",memberList,"")
 
     #try to sync all commands that aren't actively in the tree or have been altered
     try:
@@ -49,7 +49,7 @@ async def on_ready():
 @bot.command(name="geoguessr")
 async def geoguessr(ctx):
     await geoguessr_game(bot, ctx)
-'''
+
 @bot.tree.command(name="osrsinfo")
 async def osrs_info_command(interaction: discord.Interaction, entity_name: str, search_option: int = 0):
     command_output = osrsinfo(entity_name, search_option)
@@ -154,7 +154,7 @@ async def jeopardy(ctx, arg):
 async def sound_request(ctx, message):
     speaker = ctx.author
     await SoundBoard.Sound.connect(speaker, message)
-'''
+
 #-------------------------------------------------------------------
 
 #load the key
@@ -162,4 +162,4 @@ load_dotenv()
 # get the key from the environment
 KEY = os.getenv('BOT_TOKEN')
 # run the bot with the key
-bot.run('')
+bot.run(KEY)

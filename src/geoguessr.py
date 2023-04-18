@@ -3,19 +3,17 @@ import math
 import random
 import requests
 import discord
-from discord.ext import commands
-from discord import Button, ButtonStyle
 import os
 import io
 import asyncio
-from geopy.distance import great_circle
 
 from location_info import states
 
 max_rounds = 20
-api_key = ''
-#api_key = os.getenv('google_maps_api')
+api_key = os.getenv('google_maps_api')
 
+
+#geoguessr game class
 class G_game:
 
     def __init__(self, rounds, max_time):
@@ -57,7 +55,7 @@ class G_game:
                 if time_taken < self.max_time:
                     distance = await self.calc_distance(player_guess)                  
                 else:
-                    distance = 5859
+                    distance = 2892
                     
                 await self.calc_score(time_taken, distance, player)
 
@@ -109,7 +107,7 @@ class G_game:
     async def get_player_guess(self, bot, message):
         
         def check_user(new_message):
-            return new_message.author == message.author and new_message.channel == message.channel
+            return new_message.channel == message.channel
     
         start_time = time.time()
         
@@ -133,6 +131,7 @@ class G_game:
         player.rounds += 1
         if player_guess.lower() == self.cur_location.name.lower():
             await message.channel.send("Correct!")
+            player.num_correct += 1
             time.sleep(1)
             return True
         else:
@@ -147,13 +146,17 @@ class G_game:
         url = f"https://maps.googleapis.com/maps/api/geocode/json?address={address}&key={api_key}"
         response = requests.get(url)
 
-        
         if response.status_code == 200:
             data = response.json()
-            player_lat = data["results"][0]["geometry"]["location"]["lat"]
-            player_lng = data["results"][0]["geometry"]["location"]["lng"]
-            print(f"Player guess - Latitude: {player_lat}, Longitude: {player_lng}")
-            
+            print(data)
+            if len(data["results"]) == 0:
+                print()
+                player_lat = 23.6345
+                player_lng = 102.5528
+            else:
+                player_lat = data["results"][0]["geometry"]["location"]["lat"]
+                player_lng = data["results"][0]["geometry"]["location"]["lng"]
+                print(f"Player guess - Latitude: {player_lat}, Longitude: {player_lng}")
         else:
             print(f"Error: {response.status_code}")
             
@@ -200,12 +203,12 @@ class G_game:
         player.total_distance += distance
         
         #adjustable weights to priortize distance over time taken
-        prev_score_weight = 0.5
-        distance_weight = 0.4
-        time_weight = 0.1
+        prev_score_weight = 0.7
+        distance_weight = 0.225
+        time_weight = 0.075
         
-        max_distance = 5859
-        max_time_to_guess = 60
+        max_distance = 2892
+        max_time_to_guess = self.max_time
         
         accuracy = (prev_score_weight * (player.score/100)) + (distance_weight * (1 - (distance/max_distance))) + (time_weight * (1 - (time_to_guess/max_time_to_guess)))
         print(accuracy)
@@ -217,7 +220,7 @@ class G_game:
         
         formatted_distance = "{:.2f}".format(distance)
         if if_correct:
-            if player.avg_time > 30:
+            if player.avg_time > (self.max_time/2):
                 await message.channel.send(f'Remember answering quickly leads to a higher score!')
             else:
                 await message.channel.send(f'Good speed!')
@@ -229,7 +232,8 @@ class G_game:
         formatted_score = "{:.2f}".format(player.score)
         formatted_time = "{:.2f}".format(player.avg_time)
         formatted_distance = "{:.2f}".format(player.avg_distance)
-        await message.channel.send(f'Great job {player.name}! You earned a score of {formatted_score}/100.00 from playing {player.rounds} rounds')
+        await message.channel.send(f'Great job {player.name}! You earned a score of {formatted_score}/100.00')
+        await message.channel.send(f'You answered {player.num_correct} correct from playing {player.rounds}')
         await message.channel.send(f'You averaged {formatted_time} seconds per guess,')
         await message.channel.send(f'Along with an average distance from the correct location of {formatted_distance} miles!')
         return
@@ -238,6 +242,7 @@ class Player:
     def __init__(self, name, score):
         self.name = name
         self.score = score
+        self.num_correct = 0
         self.avg_time = 0
         self.total_time = 0
         self.avg_distance = 0
@@ -313,13 +318,20 @@ async def get_players(num_players, message, bot):
         
         message = await bot.wait_for('message', check=check_user)
         
-        player = message.author
+        player = message.author.name
     
-        player_list.append(Player(player, 1, 0))
+        joined_flag = False
+        for p in player_list:
+            if p.name == player:
+                await message.channel.send(f'Player "{player}" has already joined')
+                joined_flag = True
+                
+        if not joined_flag:     
+            player_list.append(Player(player, 50))
         
-        await message.channel.send(f'Player "{player}" has joined the game')
+            await message.channel.send(f'Player "{player}" has joined the game')
         
-        numjoined += 1
+            numjoined += 1
         
     return player_list
     
@@ -343,20 +355,20 @@ class menuButtons(discord.ui.View):
         self.end = False
     
     @discord.ui.button(label="Single Player",style=discord.ButtonStyle.primary, custom_id="1")
-    async def button_callback1(self, button, interaction):
+    async def button_callback1(self, x, y):
         player = Player(self.message.author.name, 50)
         self.player_list.append(player)
         self.end = True
         print(self.end)
         
     @discord.ui.button(label="Multi-Player", style=discord.ButtonStyle.secondary, custom_id="2")
-    async def button_callback2(self, button, interaction):
+    async def button_callback2(self, x, y):
         num_players = await get_player_num(self.message, self.bot)
         self.player_list = await get_players(num_players, self.message, self.bot)
         self.end = True
         
     @discord.ui.button(label="Settings", style=discord.ButtonStyle.success, custom_id="3")
-    async def button_callback3(self, button, interaction):
+    async def button_callback3(self, x, y):
         #a couple adjustable settings for the game
         #- time to guess must be > 0 and <= 180
         #- number of rounds must be > 0 and <= 50
@@ -417,7 +429,7 @@ class menuButtons(discord.ui.View):
             await self.message.channel.send('That is not a setting you can change')
             
     @discord.ui.button(label="Rules", style=discord.ButtonStyle.danger, custom_id="4")
-    async def button_callback4(self, button, interaction):
+    async def button_callback4(self, x, y):
         #explain rules to player
         #make sure we are talking to user who issued "Geoguessr" command
         def check_user(new_message):
