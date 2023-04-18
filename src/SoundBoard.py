@@ -107,76 +107,76 @@ class Board():
             emoji="✖️")
         #init custom menu buttons
         self.add1 =Button(
-            label="add",
+            label="1",
             style=discord.ButtonStyle.green)
         self.add2 =Button(
-            label="add",
+            label="2",
             style=discord.ButtonStyle.green)
         self.add3 =Button(
-            label="add",
+            label="3",
             style=discord.ButtonStyle.green)
         self.add4 =Button(
-            label="add",
+            label="4",
             style=discord.ButtonStyle.green)
         self.add5 =Button(
-            label="add",
+            label="5",
             style=discord.ButtonStyle.green)
         self.add6 =Button(
-            label="add",
+            label="6",
             style=discord.ButtonStyle.green)
         self.add7 =Button(
-            label="add",
+            label="7",
             style=discord.ButtonStyle.green)
         self.add8 =Button(
-            label="add",
+            label="8",
             style=discord.ButtonStyle.green)
         self.add9 =Button(
-            label="add",
+            label="9",
             style=discord.ButtonStyle.green)
         self.add10 =Button(
-            label="add",
+            label="10",
             style=discord.ButtonStyle.green)
         self.add11 =Button(
-            label="add",
+            label="11",
             style=discord.ButtonStyle.green)
         self.add12 =Button(
-            label="add",
+            label="12",
             style=discord.ButtonStyle.green)
         self.add13 =Button(
-            label="add",
+            label="13",
             style=discord.ButtonStyle.green)
         self.add14 =Button(
-            label="add",
+            label="14",
             style=discord.ButtonStyle.green)
         self.add15 =Button(
-            label="add",
+            label="15",
             style=discord.ButtonStyle.green)
         self.add16 =Button(
-            label="add",
+            label="16",
             style=discord.ButtonStyle.green)
         self.add17 =Button(
-            label="add",
+            label="17",
             style=discord.ButtonStyle.green)
         self.add18 =Button(
-            label="add",
+            label="18",
             style=discord.ButtonStyle.green)
         self.add19 =Button(
-            label="add",
+            label="19",
             style=discord.ButtonStyle.green)
         self.add20 =Button(
-            label="add",
+            label="20",
             style=discord.ButtonStyle.green)
         self.add21 =Button(
-            label="add",
+            label="21",
             style=discord.ButtonStyle.green)
         self.add22 =Button(
-            label="add",
+            label="22",
             style=discord.ButtonStyle.green)
         self.add23 =Button(
-            label="add",
+            label="23",
             style=discord.ButtonStyle.green)
         self.add24 =Button(
-            label="add",
+            label="24",
             style=discord.ButtonStyle.green)
         self.custom_exit =Button(
             style=discord.ButtonStyle.red,
@@ -251,6 +251,31 @@ class Board():
         self.menu.add_item(self.default_button)
         self.menu.add_item(self.custom_button)
         self.menu.add_item(self.menu_exit)
+        #urls submitted
+        self.video_url1 = ''
+        self.video_ur2 = ''
+        self.video_ur3 = ''
+        self.video_ur4 = ''
+        self.video_ur5 = ''
+        self.video_ur6 = ''
+        self.video_ur7 = ''
+        self.video_ur8 = ''
+        self.video_ur9 = ''
+        self.video_url0 = ''
+        self.video_url11 = ''
+        self.video_url2 = ''
+        self.video_url3 = ''
+        self.video_url4 = ''
+        self.video_url5 = ''
+        self.video_url6 = ''
+        self.video_url7 = ''
+        self.video_url8 = ''
+        self.video_url9 = ''
+        self.video_ur20 = ''
+        self.video_ur21 = ''
+        self.video_ur22 = ''
+        self.video_ur23 = ''
+        self.video_ur24 = ''
 #--------------------------------interaction-------------------------------------------#
     #----------------------------main_menu---------------------------------------------#
         #---------------------------defualt--------------------------------------------#
@@ -271,144 +296,168 @@ class Board():
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=b-fX44-tJHI'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()  
         self.bark.callback = bark_callback
         #---------------------------meow-----------------------------------------------#
         async def meow_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=acusg9X_opQ'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer() 
         self.meow.callback = meow_callback
         #---------------------------running--------------------------------------------#
         async def running_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://youtu.be/NcWwiv0HJow'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.running.callback = running_callback
         #---------------------------trombone-------------------------------------------#
         async def trombone_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://youtu.be/LukyMYp2noo'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.trombone.callback = trombone_callback
         #---------------------------cricket--------------------------------------------#
         async def cricket_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://youtu.be/J3AUydOQsHU'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.cricket.callback = cricket_callback
         #---------------------------sad------------------------------------------------#
         async def sad_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=vMv6O9IDdUQ'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.sad.callback = sad_callback
         #---------------------------mushroom-------------------------------------------#
         async def mushroom_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://youtu.be/6G-k4zxou7Y'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.mushroom.callback = mushroom_callback
         #---------------------------roar-----------------------------------------------#
         async def roar_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://youtu.be/nwq249Me9Yk'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.roar.callback = roar_callback
         #---------------------------scream---------------------------------------------#
         async def scream_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://youtu.be/5ynslUS4vvM'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.scream.callback = scream_callback
         #---------------------------coin-----------------------------------------------#
         async def coin_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=mQSmVZU5EL4'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.coin.callback = coin_callback
         #---------------------------harp-----------------------------------------------#
         async def harp_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://youtu.be/SPUpsb_L6Z4'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.harp.callback = harp_callback
         #---------------------------bonk-----------------------------------------------#
         async def bonk_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://youtu.be/gwxTZaa3NgI'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.bonk.callback = bonk_callback
         #---------------------------snore----------------------------------------------#
         async def snore_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://youtu.be/dNr7nXvntO8'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.snore.callback = snore_callback
         #---------------------------boom-----------------------------------------------#
         async def boom_callback(interaction): 
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=TApmI8YtYhc'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.boom.callback = boom_callback
         #---------------------------detective------------------------------------------#
         async def detective_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=qgEx3LqfIHM'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.detective.callback = detective_callback
         #---------------------------technologist---------------------------------------#
         async def technologist_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=bXC__vhmi6s'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.technologist.callback = technologist_callback
         #---------------------------cowboy---------------------------------------------#
         async def cowboy_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=7_eEug_ysmw'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.cowboy.callback = cowboy_callback
         #---------------------------clown----------------------------------------------#
         async def clown_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=Z0mrOFZuNJo'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.clown.callback = clown_callback
         #---------------------------robot----------------------------------------------#
         async def robot_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=-Vkz9z_epSc'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.robot.callback = robot_callback
         #---------------------------sus------------------------------------------------#
         async def sus_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=Regpv0xU3ZQ'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.sus.callback = sus_callback
         #---------------------------fire-----------------------------------------------#
         async def fire_callback(interaction): 
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=Qj3n7iPzhvE'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.fire.callback = fire_callback
         #---------------------------frost----------------------------------------------#
         async def frost_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=HVAmnzWPam0'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.frost.callback = frost_callback
         #---------------------------popo-----------------------------------------------#
         async def popo_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=pwWqrrd-iTs'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.popo.callback = popo_callback
         #---------------------------car------------------------------------------------#
         async def car_callback(interaction):
             voice_channel = ctx.author.voice.channel
             video_url = 'https://www.youtube.com/watch?v=HjpBzQ_oWwU'
             await play_youtube_audio(video_url, voice_channel)
+            await interaction.response.defer()
         self.car.callback = car_callback
         #------------------------default_exit------------------------------------------#
         async def default_exit_callback(interaction):
@@ -417,7 +466,14 @@ class Board():
     #----------------------------custom_menu-------------------------------------------#
         #------------------------add1-------------------------------------------#
         async def add1_callback(interaction):
-            await interaction.response.ctx.reply("please provide a link")
+            voice_channel = ctx.author.voice.channel
+            if self.video_url1 == '':
+                await interaction.response.send_message("submit a link")
+                
+                self.video_url1 = ctx.message.content
+            else:
+                await play_youtube_audio(self.video_url1, voice_channel)
+                await interaction.response.defer()
         self.add1.callback = add1_callback
         #------------------------add2-------------------------------------------#
         #------------------------add3-------------------------------------------#
