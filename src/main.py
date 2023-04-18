@@ -1,24 +1,6 @@
 import asyncio
 
 import discord
-
-#from discord import app_commands
-from discord.ext import commands
-from dotenv import load_dotenv
-
-import os
-
-
-
-
-
-import datetime as dt
-from discord import app_commands
-from discord.ext import commands, tasks
-from dotenv import load_dotenv
-import asyncio
-
-import discord
 import datetime as dt
 from discord import app_commands
 from discord.ext import commands, tasks
@@ -32,13 +14,18 @@ from osrsinfo import *
 from osrshighscores import *
 from geoguessr import geoguessr_game
 import giveaway as giveaway
-from jeopardy import *
+
 
 #Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
 #Create BRIAN declaration for ranking
 Brian = Ranking.BRIAN()
 AI = openAI()
+
+
+#when bot is logged in
+
+from jeopardy import *
 
 
 
