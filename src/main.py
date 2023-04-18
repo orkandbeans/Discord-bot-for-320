@@ -1,5 +1,4 @@
 import asyncio
-
 import discord
 import datetime as dt
 from discord import app_commands
@@ -15,18 +14,15 @@ from osrshighscores import *
 from geoguessr import geoguessr_game
 import giveaway as giveaway
 
-
 #Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
 #Create BRIAN declaration for ranking
 Brian = Ranking.BRIAN()
 AI = openAI()
 
-
 #when bot is logged in
 
 from jeopardy import *
-
 
 @bot.event
 async def on_ready():
@@ -69,7 +65,6 @@ async def daily_giveaway():
     msg.description = giveaways[0]
     for channel in channels:
         await bot.get_channel(int(str(channel)[2:len(channel)-4])).send(embed=msg)
-
 
 # -----------------INSERT BOT COMMANDS HERE--------------------------
 # -----John's Commands-----
