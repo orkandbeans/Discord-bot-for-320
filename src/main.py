@@ -17,6 +17,7 @@ import giveaway as giveaway
 #Create bot declaration with intents
 bot = commands.Bot(command_prefix="!", intents = discord.Intents.all())
 #Create BRIAN declaration for ranking
+
 Brian = Ranking.BRIAN()
 AI = openAI()
 
