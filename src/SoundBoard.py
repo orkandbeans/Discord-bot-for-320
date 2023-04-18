@@ -1,6 +1,7 @@
 import discord  # discord API
 from discord.ui import Button, View
-import youtube_dl
+import yt_dlp as youtube_dl
+import ffmpeg
 #intercation with youtube 
 async def play_youtube_audio(video_url, voice_channel):
     ydl_opts = {
