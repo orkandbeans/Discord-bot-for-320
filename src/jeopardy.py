@@ -226,13 +226,15 @@ class GameStart:
                 myselectcategory = [None] * int(numberofcategories)
                 for i in range(int(numberofcategories)):
                     question_id = 0
-                    myrand = random.randint(0, 1000)
-                    selectcategory = GameStart.randomcategory(myrand)   #returns a randomly chosen category
-                    category_id += 1
-                    GameStart.savecategory(selectcategory, myjeopardy, run) #writes to jeopardydata.json
-                    print(str(selectcategory) + " " + str(i) + " " + str(myrand) + " " + str(numberofcategories))
-                    myselectcategory[i] = str(selectcategory)
-                    questions = GameStart.savequestion(selectcategory)  #pulls questions data for the current category
+                    questions = []
+                    while(len(questions) < 5):  #guarantees that there are 5 questions per category
+                        myrand = random.randint(0, 2000)
+                        selectcategory = GameStart.randomcategory(myrand)   #returns a randomly chosen category
+                        category_id += 1
+                        GameStart.savecategory(selectcategory, myjeopardy, run) #writes to jeopardydata.json
+                        print(str(selectcategory) + " " + str(i) + " " + str(myrand) + " " + str(numberofcategories))
+                        myselectcategory[i] = str(selectcategory)
+                        questions = GameStart.savequestion(selectcategory)  #pulls questions data for the current category
                     for item in questions:
                         category = item['category']
                         value = item['value']
