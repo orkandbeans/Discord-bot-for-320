@@ -97,7 +97,7 @@ async def osrs_highscores_command(interaction: discord.Interaction, player_name:
 async def aisetup(ctx: discord.Interaction):
     author = ctx.user
     server = ctx.guild.name
-    if (AI.fetchAPI(server) != None):
+    if (AI.fetchAPI(ctx.guild.id) != None):
         await ctx.response.send_message("This server already has an API key associated with it! if you wish to use another, please use \"remove\" or \"sudoremove\" followed by this command in order to use a different API")
         return
     await ctx.response.send_message("Okay! Creating a DM!")
