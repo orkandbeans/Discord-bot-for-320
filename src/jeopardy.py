@@ -67,7 +67,9 @@ class JeopardyData:
         result = cursor.fetchone()
         if result is not None:
             current_money = result[0]
+            print("Current money " + str(current_money))
             new_money = int(current_money) + int(amount)
+            print("New money " + str(new_money))
             self.database.execute("UPDATE Jeopardy SET money=? WHERE User_id=?",(new_money, user_id))
     def multiplayer_insert(self,user_id,server_id,game_id):
         self.database.execute("INSERT INTO Multiplayer (User_id, Server_id, Game_id) VALUES (?, ?, ?)", (user_id,server_id,game_id))
@@ -119,7 +121,17 @@ class JeopardyData:
         #print(result)
         return(result)
 
-
+    def gamewinner(self, game_id):
+        query = '''
+            SELECT Jeopardy.User_id, Jeopardy.money
+            FROM Jeopardy
+            INNER JOIN Multiplayer ON Jeopardy.User_id = Multiplayer.User_id AND Jeopardy.Server_id = Multiplayer.Server_id
+            WHERE Multiplayer.Game_id = ?
+        '''
+        cursor = self.conn.execute(query, (game_id,))
+        rows = cursor.fetchall()
+        #print("From Multiplayer:")
+        return rows
     def get_all_data(self):
         query = "SELECT * FROM Jeopardy"
         cursor = self.conn.execute(query)
@@ -442,10 +454,10 @@ class Input:
             view = MyView(timeout=15)
 
             button_message = await ctx.send("Click to join the game!", view=view)
-            await asyncio.sleep(8)
+            await asyncio.sleep(15)
             print("After waiting here is db")
             myjeopardy.get_all_data()
-            await ctx.message.delete()
+ #           await ctx.message.delete()
             await button_message.delete()
             clicked_user_ids = view.get_clicked_user_ids()
             clicked_user_names = view.get_clicked_user_names()
@@ -493,7 +505,14 @@ class Input:
             for user_id in clicked_user_ids:
                 myjeopardy.update_is_in_game(user_id,server_id,0)
             await ctx.send("Game over")
-
+            rows = myjeopardy.gamewinner(run)
+            for row in rows:
+                print(row)
+                userid = row[0]
+                print(userid)
+                user = await bot.fetch_user(userid)
+                await ctx.send(str(user.name) + " has now earned a total of " + str(row[1]))
+            await botmessage.delete()
 
         myjeopardy.end_game(user_id, server_id)
     def checkcategoryamt(input):    #make sure user wants reasonable amount of categories, it takes substantial time to make one
@@ -546,7 +565,7 @@ class Input:
         else:
             thisvalue = "-" + str(value)
             myjeopardy.update_money(user_id, int(thisvalue))
-            return str("-" + value)
+            return str(thisvalue)
     def pickcategory(input, myjeopardy, game_id):    #verify the user picked a proper category and value, it must exist for it to return true
 
         categoryusermsg, valueusermsg = input.split("# ")  # user must type "Category# Value"
@@ -574,6 +593,7 @@ class aView(View):
         self.botmessage = botmessage
         self.cat = myjeopardy.get_game_categories(game_id)
         self.inround = False
+        self.username = ""
         print(self.cat[0][0])
         print(self.cat[1][0])
         #myjeopardy.search_questions(self.cat[0], 200, game_id)
@@ -597,31 +617,36 @@ class aView(View):
         print(answer)
         usermsg = await self.bot.wait_for('message', check=check)
         print(usermsg.content)
+        if(usermsg.content == "quit"):
+            self.quit = True
 
         result = Input.answer(answer, usermsg.content, str(value),self.myjeopardy,self.user_id)
         if int(result) < 0:
             playercount = self.myjeopardy.countmultiplayer(self.game_id)
             count=0
-            await self.ctx.send(str(usermsg.author) + " got it wrong", delete_after=3)
+            await self.ctx.send(str(usermsg.author.name) + " got it wrong, " + ("-" + str(value)), delete_after=3)
             await self.ctx.send("First person to give an answer",delete_after=5)
             newuser = await self.bot.wait_for('message', check=mycheck)
-            await self.ctx.send(str(newuser.author) + " was first", delete_after=3)
+            await self.ctx.send(str(newuser.author.name) + " was first", delete_after=3)
             result = Input.answer(answer, newuser.content, str(value),self.myjeopardy,newuser.author.id)
             if int(result) < 0:
-                await self.ctx.send(str(newuser.author) + " got it wrong too",delete_after=3)
+                await self.ctx.send(str(newuser.author.name) + " got it wrong too, " + ("-" + str(value)),delete_after=3)
             else:   #new person got it right so set them to pick next category
-                await self.ctx.send(str(newuser.author) + " got it right!",delete_after=3)
+                await self.ctx.send(str(newuser.author.name) + " got it right, " + ("+" + str(value)),delete_after=3)
                 print(newuser.author.id)
                 self.set_user_id(newuser.author.id)
+                self.username = newuser.author.name
                 #self.myjeopardy.get_all_data()
             await newuser.delete()
         else:
-            await self.ctx.send(str(usermsg.author) + " got it right!",delete_after=3)
+            await self.ctx.send(str(usermsg.author.name) + " got it right, " + ("+" + str(value)),delete_after=3)
             self.set_user_id(usermsg.author.id)
+            self.username = usermsg.author.name
         await usermsg.delete()
         await botquestion.delete()
         self.inround = False
         await self.ctx.send("Round over", delete_after=3)
+        await self.ctx.send(self.username + " has the board!", delete_after=5)
     def set_user_id(self, user_id): #setter function to change whose turn it is
         self.user_id = user_id
 
